@@ -3156,7 +3156,8 @@ async function gotoW(addr,silent=false){
         <a href="https://x.com/${knownP.twitter}" target="_blank" style="display:inline-flex;align-items:center;gap:4px;margin-top:4px;font-family:'DM Mono',monospace;font-size:.65rem;color:var(--acc);text-decoration:none">𝕏 @${knownP.twitter} ↗</a>
       </div>
     </div>` : '';
-  tb.innerHTML=moatPts.sort((a,b)=>b.points-a.points).map(p=>{
+  const tb=document.querySelector('#wMTbl tbody');
+  if(tb)tb.innerHTML=moatPts.sort((a,b)=>b.points-a.points).map(p=>{
     const meta=MOATS[p.contractAddress];
     const lbl=meta?`<div style="display:flex;align-items:center">${logoImg(meta.logo,'moat-logo-sm',meta.emoji,meta.color)}<span style="color:${meta.color}">${meta.name}</span></div>`:`<span class="wa">${shortA(p.contractAddress)}</span>`;
     const mTot=moatMap[p.contractAddress]?.totalPoints||1;
