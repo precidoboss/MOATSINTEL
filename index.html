@@ -542,6 +542,7 @@ main{position:relative;z-index:1;padding:.8rem;max-width:1440px;margin:0 auto}
       <div class="mtab on" data-ms="overview"    onclick="mTab(this)">Overview</div>
       <div class="mtab"    data-ms="token"       onclick="mTab(this)">Token & Price</div>
       <div class="mtab"    data-ms="leaderboard" onclick="mTab(this)">Leaderboard</div>
+      <div class="mtab"    data-ms="bubblemap"   onclick="mTab(this);renderBubbleMap(activeMoat)">🫧 Bubble Map</div>
       <div class="mtab"    data-ms="rewards"     onclick="mTab(this)">Rewards</div>
     </div>
     <div id="ms-overview" class="mtsec on">
@@ -603,6 +604,40 @@ main{position:relative;z-index:1;padding:.8rem;max-width:1440px;margin:0 auto}
           </div>
         </div>
         <div class="pb0 tw"><table class="tbl" id="mLbTbl"><thead><tr><th>Rank</th><th>Wallet</th><th>Points</th><th>Weight</th><th>Share</th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </div>
+    <div id="ms-bubblemap" class="mtsec">
+      <div class="panel">
+        <div class="ph">
+          <div class="ptitle" id="bubbleMapTitle">🫧 Holder Bubble Map</div>
+          <div style="display:flex;gap:6px;align-items:center">
+            <span style="font-family:'DM Mono',monospace;font-size:.56rem;color:var(--mut)" id="bubbleMapCount"></span>
+            <button onclick="renderBubbleMap(activeMoat,true)" class="btn btn-sm btn-g" style="padding:2px 8px;font-size:.54rem">↻ Refresh</button>
+          </div>
+        </div>
+        <div style="padding:.5rem">
+          <!-- Legend -->
+          <div style="display:flex;gap:10px;flex-wrap:wrap;margin-bottom:.6rem;font-family:'DM Mono',monospace;font-size:.53rem;color:var(--mut)">
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--acc);margin-right:4px;vertical-align:middle"></span>Staked</span>
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--gld);margin-right:4px;vertical-align:middle"></span>Locked</span>
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--red);margin-right:4px;vertical-align:middle"></span>Burned</span>
+            <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:var(--pur);margin-right:4px;vertical-align:middle"></span>Mixed</span>
+            <span style="margin-left:auto;color:var(--dim)">Size = token share · Label = token amount · 👆 Drag to move · Tap for detail</span>
+          </div>
+          <canvas id="bubbleMapCanvas" style="width:100%;border-radius:10px;cursor:pointer;touch-action:none;background:var(--sur)" height="500"></canvas>
+          <!-- Tooltip / detail panel -->
+          <div id="bubbleMapDetail" style="display:none;margin-top:.65rem;background:var(--card);border:1px solid var(--bor);border-radius:10px;padding:.85rem">
+            <div style="display:flex;align-items:center;gap:10px;margin-bottom:.55rem">
+              <div id="bmd-pic" style="width:38px;height:38px;border-radius:50%;overflow:hidden;flex-shrink:0;background:var(--bor);display:flex;align-items:center;justify-content:center;font-size:1rem"></div>
+              <div style="flex:1;min-width:0">
+                <div id="bmd-name" style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:.82rem"></div>
+                <div id="bmd-addr" style="font-family:'DM Mono',monospace;font-size:.56rem;color:var(--mut);cursor:pointer" onclick="gotoW(document.getElementById('bmd-addr').dataset.addr)"></div>
+              </div>
+              <button onclick="gotoW(document.getElementById('bmd-addr').dataset.addr)" class="btn btn-sm btn-g" style="padding:2px 8px;font-size:.54rem">View Wallet →</button>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.4rem" id="bmd-stats"></div>
+          </div>
+        </div>
       </div>
     </div>
     <div id="ms-rewards" class="mtsec">
@@ -1037,7 +1072,33 @@ main{position:relative;z-index:1;padding:.8rem;max-width:1440px;margin:0 auto}
 
 <!-- ══ GUIDE ══ -->
 <div id="view-guide" class="view">
-  <div class="sh"><div class="sh-t">How to Use MOATS INTEL</div></div>
+  <div class="sh">
+    <div class="sh-t">How Moats Work</div>
+    <div style="display:flex;gap:6px;align-items:center">
+      <a href="https://moats.app" target="_blank" class="btn btn-sm btn-g" style="font-size:.56rem;padding:3px 9px;text-decoration:none">moats.app ↗</a>
+      <a href="https://x.com/MoatsApp" target="_blank" class="btn btn-sm btn-g" style="font-size:.56rem;padding:3px 9px;text-decoration:none">𝕏 @MoatsApp ↗</a>
+    </div>
+  </div>
+
+  <!-- ═══ ANIMATED STORY GUIDE ═══ -->
+  <div style="background:var(--card);border:1px solid var(--bor);border-radius:14px;overflow:hidden;margin-bottom:1.1rem">
+    <div style="padding:.7rem 1rem;background:var(--sur);border-bottom:1px solid var(--bor);display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:6px">
+      <div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:.75rem;letter-spacing:.06em;color:var(--acc)">⬡ INTERACTIVE GUIDE — HOW MOATS WORK</div>
+      <div style="display:flex;gap:6px;align-items:center">
+        <span id="guideSlideLabel" style="font-family:'DM Mono',monospace;font-size:.56rem;color:var(--mut)">1 / 8</span>
+        <button onclick="guidePlay()" id="guidePlayBtn" class="btn btn-sm" style="padding:2px 10px;font-size:.6rem">▶ Auto-Play</button>
+      </div>
+    </div>
+    <canvas id="guideCanvas" style="width:100%;display:block;cursor:pointer;touch-action:none;border-radius:10px" height="380"></canvas>
+    <div style="height:3px;background:var(--bor)">
+      <div id="guideProgress" style="height:100%;background:var(--acc);width:12.5%;transition:width .5s ease;border-radius:0 3px 3px 0"></div>
+    </div>
+    <div style="padding:.65rem 1rem;display:flex;align-items:center;gap:8px">
+      <button onclick="guideStep(-1)" class="btn btn-sm btn-g" style="padding:3px 10px;font-size:.7rem">◀ Prev</button>
+      <div style="display:flex;gap:5px;flex:1;justify-content:center" id="guideDots"></div>
+      <button onclick="guideStep(1)" class="btn btn-sm btn-g" style="padding:3px 10px;font-size:.7rem">Next ▶</button>
+    </div>
+  </div>
   <div style="background:linear-gradient(135deg,rgba(249,115,22,.1),rgba(212,168,67,.05));border:1px solid rgba(249,115,22,.22);border-radius:13px;padding:1.3rem;margin-bottom:1rem">
     <div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:.4rem">Your edge in the <span style="color:var(--acc)">Moats ecosystem</span></div>
     <div style="font-size:.8rem;color:var(--dim);line-height:1.65;max-width:580px">MOATS INTEL tracks all 11 moats live — staked/locked/burned positions, token prices, reward history, and council scores. Use the Investment Allocator to plan your USDC into optimal token positions, and the Signals tab to spot which moats have the most upside.</div>
@@ -1162,6 +1223,30 @@ main{position:relative;z-index:1;padding:.8rem;max-width:1440px;margin:0 auto}
       <div class="sc"><div class="sl">Council Score</div><div class="sv cg" id="posCouncil">—</div></div>
       <div class="sc"><div class="sl">Pending Rewards</div><div class="sv cgn" id="posPendingRew">—</div></div>
       <div class="sc"><div class="sl">Portfolio Value</div><div class="sv" id="posPortfolioVal">—</div></div>
+    </div>
+    <!-- Claim All Rewards button — shown when any moat has rewards -->
+    <div id="posClaimAllBanner" style="display:none;margin-top:.65rem;background:rgba(109,184,122,.07);border:1px solid rgba(109,184,122,.3);border-radius:12px;padding:.85rem 1.1rem">
+      <div style="display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:.5rem">
+        <div>
+          <div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:.82rem;color:var(--grn)">💰 Rewards Available</div>
+          <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--mut);margin-top:2px" id="posClaimAllDesc">Pending rewards across your moats</div>
+        </div>
+        <div style="display:flex;gap:7px;align-items:center">
+          <button id="posClaimAllBtn" class="btn" style="background:var(--grn);color:#141210;font-size:.75rem;padding:.55rem 1.1rem" onclick="posClaimAllRewards()">💰 Claim All Rewards</button>
+          <button id="posClaimCancelBtn" style="display:none;padding:.5rem .85rem;background:rgba(224,82,82,.1);border:1px solid rgba(224,82,82,.35);border-radius:8px;color:var(--red);font-family:'DM Mono',monospace;font-size:.68rem;cursor:pointer" onclick="posCancelClaimAll()">✕ Cancel</button>
+        </div>
+      </div>
+      <!-- Progress -->
+      <div id="posClaimAllProgress" style="display:none;margin-top:.75rem">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:.4rem">
+          <span class="spin" id="posClaimSpinner"></span>
+          <span id="posClaimStatus" style="font-family:'DM Mono',monospace;font-size:.65rem;color:var(--mut)">Preparing…</span>
+        </div>
+        <div style="height:4px;background:var(--bor);border-radius:2px;overflow:hidden">
+          <div id="posClaimProgressBar" style="height:100%;background:var(--grn);border-radius:2px;transition:width .4s ease;width:0%"></div>
+        </div>
+        <div id="posClaimLog" style="margin-top:.55rem;max-height:120px;overflow-y:auto;font-family:'DM Mono',monospace;font-size:.6rem;color:var(--mut)"></div>
+      </div>
     </div>
   </div>
 
@@ -1511,15 +1596,15 @@ const LOAD_QUIPS = [
 const DSC_PAIR = 'https://api.dexscreener.com/latest/dex/pairs/avalanche/';
 
 const MOATS = {
-  '0xcf65744c955a292d11de2a4184e9fabedbfc7b40':{name:'HEFE Moat',         short:'HEFE',  ticker:'$hefe',    emoji:'🏔️',color:'#f97316',tokenAddr:'0x18E3605B13F10016901eAC609b9E188CF7c18973',  pairAddr:'0xc4fa66b4839af7379a4fcbe5dd048b18fe99a2ac', altPairAddr:'0xe11e871d312cc9bae9eb24c7bdc2031f8453bf44', lfjPairAddr:'0xe11e871d312cc9bae9eb24c7bdc2031f8453bf44', url:'https://moats.app/moat/0xcf65744c955a292d11de2a4184e9fabedbfc7b40',   logo:'Hefelogo-new.png',              knownSupply:690420000, pharaohPool:true, dexOverride:'pharaoh', odosOnly:true},
-  '0x501f6e7bec3db63d8dacbc9fa0ce42d5d2329d53':{name:'hCASH LP Moat',     short:'hCASH', ticker:'$hcash',   emoji:'💧', color:'#d4a843',tokenAddr:'0x8f961980518bc9ab302948de7948580666dc35d9',  pairAddr:'0x8f961980518bc9ab302948de7948580666dc35d9',  url:'https://moats.app/moat/0x501f6e7bec3db63d8dacbc9fa0ce42d5d2329d53',   logo:'hashcashclub.png',   supplyType:'dynamic',knownSupply:21000000000,note:'LP token moat — add AVAX+hCASH liquidity on Pharaoh, then stake LP here',lpOnly:false,lpUrl:'https://phar.gg'},
-  '0x020c73b55d139d5e259bad89b126f2a446c22ac6':{name:'FREAK Anon Moat',   short:'FREAK', ticker:'$freak',   emoji:'👾', color:'#8c8074',tokenAddr:'0x201d04f88bc9b3bdacdf0519a95e117f25062d38',  pairAddr:'0x0e13283315fd3d996b22ef40f54c38f24c7f4ee0', altPairAddr:'0x90c2ea98d6389cc4eb05ec635ee82c493b2dfaf2', dexOverride:'pharaoh', pharaohPool:true, odosOnly:true, url:'https://moats.app/moat/0x020c73b55d139d5e259bad89b126f2a446c22ac6',   logo:'FREAK_Anon.png',                knownSupply:1000000000},
-  '0x7e1f28c9622aa68001fe0b200f5e5f93f6b35cc9':{name:'Balln Chikn Moat', short:'BALLN', ticker:'$balln',   emoji:'🏀', color:'#f43f5e',tokenAddr:'0x4Afc7838167b77530278483c3d8c1fFe698a912E',  pairAddr:'0xa8f87e026481cf03dc9a68570584a664186b41c7', url:'https://moats.app/moat/0x7e1f28c9622aa68001fe0b200f5e5f93f6b35cc9',    logo:'balln-token.jpg',               knownSupply:100000},
-  '0x464b2817f16f6117602ad05bae446c2fc5ba6fb7':{name:'Supercycle Moat',   short:'SUPER', ticker:'$super',   emoji:'🌀', color:'#818cf8',tokenAddr:'0xCA2e0f72653337d05B1ABceBEA5718A4A3E57a0b',  pairAddr:'0x017c5608a8ab29ab23093726cf7c64e5ef88e191', url:'https://moats.app/moat/0x464b2817f16f6117602ad05bae446c2fc5ba6fb7',    logo:'supercycle.jpg',                knownSupply:10000000000},
-  '0x940b7f7d73a504ec566157eebb0566b81d57e8f8':{name:'Vitrene Moat',      short:'VIT',   ticker:'$vitrene', emoji:'💎', color:'#22d3ee',tokenAddr:'0xde34C06de75FB446b5e7b8dd272D014F2A19009D',  pairAddr:'0x1ed3c7234ed58700cb99dfd5eb1bad4242855ad8',  url:'https://moats.app/moat/0x940b7f7d73a504ec566157eebb0566b81d57e8f8',   logo:'VIT-Logo-Alternative-2.jpg',    knownSupply:10000000000},
-  '0x7a4d20261a765bd9ba67d49fbf8189843eec3393':{name:'Lil Coq Moat',      short:'LIL',   ticker:'$lil',     emoji:'🐓', color:'#fb7185',tokenAddr:'0x22683BbaDD01473969F23709879187705a253763',  pairAddr:'0x8acc49857a1259d25eb3ca0aa15b398d0e149ef2', url:'https://moats.app/moat/0x7a4d20261a765bd9ba67d49fbf8189843eec3393',    logo:'LIL-Coq-Logo.png',              knownSupply:1350000000},
-  '0x93d8cc111233f8c5b9a019df7c159b6f9be7b44b':{name:'Dimish Moat',       short:'DISH',  ticker:'$dimish',  emoji:'🌑', color:'#a78bfa',tokenAddr:'0x40146E96EE5297187022D1ca62A3169B5e45B0a4',  pairAddr:null, geckoPoolAddr:'0x3edc0126e36758419ba7eeb44b2a3a094e7e9bb7', geckoNetwork:'avax', url:'https://moats.app/moat/0x93d8cc111233f8c5b9a019df7c159b6f9be7b44b',   logo:'Dimish1000px.png',              knownSupply:1000000000},
-  '0x3399d03566bb6db0cb4f1e13047589a1499cebbc':{name:'Bensi Box Moat',    short:'BENSI', ticker:'$bensi',   emoji:'📦', color:'#fbbf24',tokenAddr:'0x00697F5F6dc2CA0A17e6c89bCcd1173A61eA24a6',  pairAddr:'0x7984cD0FA3DaA31f8B305A0544b6097BA40Fd3B8', swapViaWavax:true, url:'https://moats.app/moat/0x3399d03566bb6db0cb4f1e13047589a1499cebbc',    logo:'Bensi-Box-logo-new.jpg',        knownSupply:1000000000},
+  '0xcf65744c955a292d11de2a4184e9fabedbfc7b40':{name:'HEFE Moat',         short:'HEFE',  ticker:'$hefe',    emoji:'🏔️',color:'#f97316',tokenAddr:'0x18E3605B13F10016901eAC609b9E188CF7c18973',  pairAddr:'0xc4fa66b4839af7379a4fcbe5dd048b18fe99a2ac', altPairAddr:'0xe11e871d312cc9bae9eb24c7bdc2031f8453bf44', lfjPairAddr:'0xe11e871d312cc9bae9eb24c7bdc2031f8453bf44', url:'https://moats.app/moat/0xcf65744c955a292d11de2a4184e9fabedbfc7b40',   logo:'Hefelogo-new.png',              knownSupply:690420000, pharaohPool:true, dexOverride:'pharaoh', odosOnly:true, twitter:'AvaxHefe'},
+  '0x501f6e7bec3db63d8dacbc9fa0ce42d5d2329d53':{name:'hCASH LP Moat',     short:'hCASH', ticker:'$hcash',   emoji:'💧', color:'#d4a843',tokenAddr:'0x8f961980518bc9ab302948de7948580666dc35d9',  pairAddr:'0x8f961980518bc9ab302948de7948580666dc35d9',  url:'https://moats.app/moat/0x501f6e7bec3db63d8dacbc9fa0ce42d5d2329d53',   logo:'hashcashclub.png',   supplyType:'dynamic',knownSupply:21000000000,note:'LP token moat — add AVAX+hCASH liquidity on Pharaoh, then stake LP here',lpOnly:false,lpUrl:'https://phar.gg', twitter:'clubhashcash'},
+  '0x020c73b55d139d5e259bad89b126f2a446c22ac6':{name:'FREAK Anon Moat',   short:'FREAK', ticker:'$freak',   emoji:'👾', color:'#8c8074',tokenAddr:'0x201d04f88bc9b3bdacdf0519a95e117f25062d38',  pairAddr:'0x0e13283315fd3d996b22ef40f54c38f24c7f4ee0', altPairAddr:'0x90c2ea98d6389cc4eb05ec635ee82c493b2dfaf2', dexOverride:'pharaoh', pharaohPool:true, odosOnly:true, twitter:'LucidThingsNFT', url:'https://moats.app/moat/0x020c73b55d139d5e259bad89b126f2a446c22ac6',   logo:'FREAK_Anon.png',                knownSupply:1000000000},
+  '0x7e1f28c9622aa68001fe0b200f5e5f93f6b35cc9':{name:'Balln Chikn Moat', short:'BALLN', ticker:'$balln',   emoji:'🏀', color:'#f43f5e',tokenAddr:'0x4Afc7838167b77530278483c3d8c1fFe698a912E',  pairAddr:'0xa8f87e026481cf03dc9a68570584a664186b41c7', url:'https://moats.app/moat/0x7e1f28c9622aa68001fe0b200f5e5f93f6b35cc9',    logo:'balln-token.jpg',               knownSupply:100000, twitter:'BallnToken3'},
+  '0x464b2817f16f6117602ad05bae446c2fc5ba6fb7':{name:'Supercycle Moat',   short:'SUPER', ticker:'$super',   emoji:'🌀', color:'#818cf8',tokenAddr:'0xCA2e0f72653337d05B1ABceBEA5718A4A3E57a0b',  pairAddr:'0x017c5608a8ab29ab23093726cf7c64e5ef88e191', url:'https://moats.app/moat/0x464b2817f16f6117602ad05bae446c2fc5ba6fb7',    logo:'supercycle.jpg',                knownSupply:10000000000, twitter:'supercyclereal_'},
+  '0x940b7f7d73a504ec566157eebb0566b81d57e8f8':{name:'Vitrene Moat',      short:'VIT',   ticker:'$vitrene', emoji:'💎', color:'#22d3ee',tokenAddr:'0xde34C06de75FB446b5e7b8dd272D014F2A19009D',  pairAddr:'0x1ed3c7234ed58700cb99dfd5eb1bad4242855ad8',  url:'https://moats.app/moat/0x940b7f7d73a504ec566157eebb0566b81d57e8f8',   logo:'VIT-Logo-Alternative-2.jpg',    knownSupply:10000000000, twitter:'VitreneOnAvax'},
+  '0x7a4d20261a765bd9ba67d49fbf8189843eec3393':{name:'Lil Coq Moat',      short:'LIL',   ticker:'$lil',     emoji:'🐓', color:'#fb7185',tokenAddr:'0x22683BbaDD01473969F23709879187705a253763',  pairAddr:'0x8acc49857a1259d25eb3ca0aa15b398d0e149ef2', url:'https://moats.app/moat/0x7a4d20261a765bd9ba67d49fbf8189843eec3393',    logo:'LIL-Coq-Logo.png',              knownSupply:1350000000, twitter:'LilCoqNft'},
+  '0x93d8cc111233f8c5b9a019df7c159b6f9be7b44b':{name:'Dimish Moat',       short:'DISH',  ticker:'$dimish',  emoji:'🌑', color:'#a78bfa',tokenAddr:'0x40146E96EE5297187022D1ca62A3169B5e45B0a4',  pairAddr:null, geckoPoolAddr:'0x3edc0126e36758419ba7eeb44b2a3a094e7e9bb7', geckoNetwork:'avax', url:'https://moats.app/moat/0x93d8cc111233f8c5b9a019df7c159b6f9be7b44b',   logo:'Dimish1000px.png',              knownSupply:1000000000, twitter:'DimiFW'},
+  '0x3399d03566bb6db0cb4f1e13047589a1499cebbc':{name:'Bensi Box Moat',    short:'BENSI', ticker:'$bensi',   emoji:'📦', color:'#fbbf24',tokenAddr:'0x00697F5F6dc2CA0A17e6c89bCcd1173A61eA24a6',  pairAddr:'0x7984cD0FA3DaA31f8B305A0544b6097BA40Fd3B8', swapViaWavax:true, url:'https://moats.app/moat/0x3399d03566bb6db0cb4f1e13047589a1499cebbc',    logo:'Bensi-Box-logo-new.jpg',        knownSupply:1000000000, twitter:'BensiBox'},
   '0x9c5f177cdc0332e61e423ee9ad9e4f2333f62685':{name:'Where Is Malek Moat',short:'MALEK',ticker:'$malek',   emoji:'🔍', color:'#34d399',tokenAddr:'0xeB55FAB1C23EC0Aa5024Ee593A12edCD031Ecd9b',  pairAddr:'0xa7e81808219cb1a27c71bd56f551a43fc8cad23', arenaToken:'0xB8d7710f7d8349A506b75dD184F05777c82dAd0C', odosOnly:true, url:'https://moats.app/moat/0x9c5f177cdc0332e61e423ee9ad9e4f2333f62685',    logo:'wheremalek.jpg',                knownSupply:10000000000, isNew:true},
 };
 
@@ -1564,6 +1649,12 @@ const KNOWN_PROFILES = {
   '0x488be5ded711572f9fb8568f3013e6e907506b6f': { pic: 'https://raw.githubusercontent.com/precidoboss/my-game-sprites/main/Hax.png', twitter: 'EzHaxx' },
   '0x785a9369cf7918c0a295809962eaf9d8fabde98d': { pic: 'https://raw.githubusercontent.com/precidoboss/my-game-sprites/main/Tigresa.png', twitter: 'LoveCrypto15' },
   '0x0e898ba9e51bc267789747fade63ed57ea5b5431': { pic: 'https://raw.githubusercontent.com/precidoboss/my-game-sprites/main/Opmilo405.png', twitter: 'opmilo405' },
+  // New contacts from note
+  '0xe561fdbceaa225ccfa080bcd4d84382e27f6d9d9': { pic: 'https://raw.githubusercontent.com/precidoboss/my-game-sprites/main/IMG_2970.jpeg', twitter: 'entropy_8' },
+  '0x934efb8896954828851bb52111c27bdb055e0dae': { pic: 'https://raw.githubusercontent.com/precidoboss/my-game-sprites/main/IMG_2974.jpeg', twitter: 'optimas_primeTnT' },
+  '0x6518fdee24ae4f69f8ce085d61e99a6e8d9a78d7': { pic: 'https://raw.githubusercontent.com/precidoboss/my-game-sprites/main/IMG_2972.jpeg', twitter: 'grouchomarx79' },
+  '0x9992e35790176857ff3825554203f6918b8deaea': { pic: 'https://raw.githubusercontent.com/precidoboss/my-game-sprites/main/IMG_2971.jpeg', twitter: 'debledcedric' },
+  '0x798ea572fe90fb7bf49c1058e04e86050b9bde2b': { pic: 'https://raw.githubusercontent.com/precidoboss/my-game-sprites/main/IMG_2973.jpeg', twitter: '71JGzone' },
 };
 
 function getKnownProfile(wallet) {
@@ -1665,6 +1756,7 @@ function nav(el, _skipRoute=false){
   if(v==='leaderboard')renderLB();
   if(v==='events')renderEvs();
   if(v==='moats')renderMoatSelect();
+  if(v==='guide')setTimeout(_guideBoot,50);
   if(v==='signals')renderSignals();
   if(v==='invest-home'){populateMoatSelects();}
   if(v==='calculator'){populateMoatSelects();runAllocator();}
@@ -1731,8 +1823,10 @@ function normEvs(d){
   let a=d;
   if(!Array.isArray(a)||!a.length)return[];
   return a.map(e=>{
-    // Resolve wallet — API uses 'user' or 'from' or nested fields
-    const wallet = (e.user||e.from||e.walletAddress||e.wallet||e.address||e.owner||'').toLowerCase();
+    // Resolve wallet — check all possible field names the API might use
+    const _rawWallet = e.user||e.from||e.walletAddress||e.wallet||e.address||e.owner||e.account||e.maker||e.sender||e.caller||
+      e.profile?.address||e.profile?.wallet||e.userAddress||e.fromAddress||e.initiator||e.actor||'';
+    const wallet = (typeof _rawWallet === 'string' ? _rawWallet : '').toLowerCase();
     const txHash = e.transactionHash||e.txHash||e.hash||'';
     // Parse timestamp — API returns ISO string like "2025-01-15T..." or unix seconds
     let ts = e.timestamp||e.time||e.createdAt||e.blockTimestamp||0;
@@ -2190,7 +2284,8 @@ function renderMoatSelect(){
       </div>
       <div style="margin-top:8px;padding-top:8px;border-top:1px solid var(--bor);display:flex;gap:6px;flex-wrap:wrap">
         <button class="btn btn-sm" onclick="event.stopPropagation();navToMoat('${addr}')">Enter →</button>
-        ${meta.url?`<a href="${meta.url}" target="_blank" class="btn btn-sm btn-g" style="text-decoration:none" onclick="event.stopPropagation()">Moats.app ↗</a>`:''}
+        ${meta.url?`<a href="${meta.url}" target="_blank" class="btn btn-sm btn-g" style="text-decoration:none" onclick="event.stopPropagation()">moats.app ↗</a>`:''}
+        ${meta.twitter?`<a href="https://x.com/${meta.twitter}" target="_blank" class="btn btn-sm btn-g" style="text-decoration:none;font-size:.52rem" onclick="event.stopPropagation()">𝕏 @${meta.twitter}</a>`:''}
       </div>
     </div>`;
   }).join('');
@@ -2413,8 +2508,9 @@ function renderMoatDetail(addr,silent=false){
           <div style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--mut);margin-top:2px">${meta.ticker} · ${shortA(addr)}</div>
         </div>
       </div>
-      <div style="display:flex;gap:6px;flex-wrap:wrap">
-        ${meta.url?`<a href="${meta.url}" target="_blank" class="btn btn-sm btn-g" style="text-decoration:none">View on Moats ↗</a>`:''}
+      <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        ${meta.url?`<a href="${meta.url}" target="_blank" class="btn btn-sm btn-g" style="text-decoration:none">moats.app ↗</a>`:''}
+        ${meta.twitter?`<a href="https://x.com/${meta.twitter}" target="_blank" class="btn btn-sm btn-g" style="text-decoration:none">𝕏 @${meta.twitter}</a>`:''}
         <button class="btn btn-sm btn-p" onclick="backToMoats()">✕ Close</button>
       </div>
     </div>`;
@@ -2795,51 +2891,199 @@ async function loadPrice(addr){
 }
 
 
-// Inject supply rows into token info table (called after supply fetch)
+// Inject supply rows + accurate token distribution panel
 async function injectSupplyIntoTable(moatAddr) {
   const meta = MOATS[moatAddr]; if(!meta) return;
+
+  // Ensure supply is fetched
   let supply = getSupply(moatAddr);
   if (!supply) supply = await fetchTokenSupply(meta.tokenAddr);
   const tbl = document.querySelector('#mTokenTbl tbody');
   if (!tbl || !supply) return;
   tbl.querySelectorAll('.supply-row').forEach(r=>r.remove());
-  const m = moatMap[moatAddr] || {};
+
+  // Ensure on-chain token totals are fetched (correct cache key = moatAddr)
+  let totals = moatTokenCache[moatAddr];
+  if (!totals) totals = await fetchMoatTokenTotals(moatAddr);
+
+  const m   = moatMap[moatAddr] || {};
   const ppt = estPtsPerToken(moatAddr);
-  const moatPct = supply.totalSupply>0 && m.totalTokens>0
-    ? (m.totalTokens/supply.totalSupply*100).toFixed(3)+'%'
-    : (m.hasTokenAmts ? '—' : 'est. only');
-  const isDynamic = meta.supplyType === 'dynamic';
+  const isDynamic  = meta.supplyType === 'dynamic';
+  const pxData     = priceCache[moatAddr];
+  const price      = pxData?.price || 0;
+  const totalSupply = supply.totalSupply || 0;
+
+  // ── Accurate figures ──
+  // In Moat = on-chain balanceOf(moatContract) — staked + locked tokens sitting in contract
+  const inMoatRaw  = (totals && totals.staked > 0) ? totals.staked : (m.totalTokens || 0);
+  // Burned = on-chain balanceOf(0xDead)
+  const burnedRaw  = (totals && totals.burned > 0) ? totals.burned : (m.burnTokens || 0);
+  // LP Pool = liquidity USD / token price (gives base token in pool)
+  const liqUsd     = pxData?.liq || 0;
+  // DexScreener liq.usd = both sides; base token ≈ half of USD / price
+  const liqRaw     = (price > 0 && liqUsd > 0) ? (liqUsd / 2 / price) : 0;
+  // Circulating = total - inMoat - burned (LP is subset of circulating, not additive)
+  const nonCirc    = inMoatRaw + burnedRaw;
+  const circRaw    = Math.max(0, totalSupply - nonCirc);
+
+  const pct  = (raw) => totalSupply > 0 && raw > 0 ? (raw / totalSupply * 100) : 0;
+  const fmt1 = (n)   => n > 0.001 ? n.toFixed(2) + '%' : n > 0 ? '<0.01%' : '—';
+
+  const inMoatPct = pct(inMoatRaw);
+  const burnedPct = pct(burnedRaw);
+  const liqPct    = pct(liqRaw);
+  const circPct   = pct(circRaw);
+
+  const calcMcap  = (totalSupply > 0 && price > 0) ? '$' + fmtK(circRaw * price) : '—';
+  const fdvMcap   = (totalSupply > 0 && price > 0) ? '$' + fmtK(totalSupply * price) : '—';
+
   const supplyTypeHtml = isDynamic
     ? '<span style="color:var(--gld);font-size:.58rem">&#9889; Dynamic</span>'
     : '<span style="color:var(--grn);font-size:.58rem">&#128274; Fixed</span>';
-  const pxData = priceCache[moatAddr];
-  const calcMcap = (supply.totalSupply>0 && pxData && pxData.price>0)
-    ? '$'+fmtK(supply.totalSupply * pxData.price) : '—';
 
+  const dataSource = totals?.source === 'onchain'
+    ? '<span style="color:var(--grn);font-size:.55rem">&#9679; on-chain verified</span>'
+    : '<span style="color:var(--gld);font-size:.55rem">&#9651; estimated</span>';
+
+  // ── Table rows ──
   const rows = [
-    ['Total Supply',      fmtP(supply.totalSupply)+' '+(supply.symbol||meta.ticker), null],
-    ['Decimals',          String(supply.decimals), null],
-    ['Supply Type',       null, supplyTypeHtml],
-    ['Est. in Moat',      moatPct, null],
-    ['Pts/Token (1x)',    ppt!==null ? fmtPrice(ppt) : '—', null],
-    ['Calc. Market Cap',  calcMcap, null],
+    ['Token',          meta.ticker + ' (' + (supply.symbol || meta.ticker) + ')', null],
+    ['Total Supply',   fmtP(totalSupply), null],
+    ['Supply Type',    null, supplyTypeHtml],
+    ['Circ. Market Cap', calcMcap, null],
+    ['FDV',            fdvMcap, null],
+    ['Pts / Token (1×)', ppt !== null ? fmtPrice(ppt) : '—', null],
+    ['Data Source',    null, dataSource],
   ];
 
   rows.forEach(function(row) {
-    var label=row[0], val=row[1], html=row[2];
-    var tr = document.createElement('tr');
-    tr.className = 'supply-row';
-    var tdL = document.createElement('td');
-    tdL.className = 'il';
-    tdL.textContent = label;
-    var tdV = document.createElement('td');
-    tdV.style.cssText = "font-family:'DM Mono',monospace;font-size:.72rem";
-    if (html) tdV.innerHTML = html;
-    else tdV.textContent = val;
-    tr.appendChild(tdL);
-    tr.appendChild(tdV);
-    tbl.appendChild(tr);
+    var [label, val, html] = row;
+    var tr  = document.createElement('tr'); tr.className = 'supply-row';
+    var tdL = document.createElement('td'); tdL.className = 'il'; tdL.textContent = label;
+    var tdV = document.createElement('td'); tdV.style.cssText = "font-family:'DM Mono',monospace;font-size:.72rem";
+    if (html) tdV.innerHTML = html; else tdV.textContent = val;
+    tr.appendChild(tdL); tr.appendChild(tdV); tbl.appendChild(tr);
   });
+
+  // ── Distribution visual ──
+  var distTr = document.createElement('tr'); distTr.className = 'supply-row';
+  var distTd = document.createElement('td'); distTd.colSpan = 2; distTd.style.cssText = 'padding:.8rem 0 .4rem';
+
+  // Segments — LP is shown as subset of Circulating (informational), not additive
+  var segments = [
+    { label:'In Moat',     pct: inMoatPct, color:'#f97316', val: inMoatRaw  },
+    { label:'Burned 🔥',   pct: burnedPct, color:'#e05252', val: burnedRaw  },
+    { label:'Circulating', pct: circPct,   color:'#6db87a', val: circRaw    },
+  ].filter(s => s.pct > 0.001);
+
+  // If no segments have data, show a placeholder bar
+  var hasData = segments.some(s => s.pct > 0);
+
+  var barHtml = hasData
+    ? segments.map(s =>
+        `<div style="flex:${Math.max(s.pct, 0.3)};background:${s.color};height:100%;transition:flex .5s ease" title="${s.label}: ${fmt1(s.pct)}"></div>`
+      ).join('<div style="width:1px;background:#141210;flex-shrink:0"></div>')
+    : `<div style="flex:1;background:var(--bor);height:100%;border-radius:6px"></div>`;
+
+  var legendHtml = segments.map(s =>
+    `<div style="display:flex;align-items:center;justify-content:space-between;padding:.25rem 0;border-bottom:1px solid var(--bor)">
+      <div style="display:flex;align-items:center;gap:6px">
+        <span style="width:9px;height:9px;border-radius:2px;background:${s.color};flex-shrink:0;display:inline-block"></span>
+        <span style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--mut)">${s.label}</span>
+      </div>
+      <div style="display:flex;align-items:center;gap:.5rem">
+        <span style="font-family:'DM Mono',monospace;font-size:.55rem;color:var(--ash2)">${fmtP(s.val)}</span>
+        <span style="font-family:'Chakra Petch',sans-serif;font-size:.65rem;font-weight:700;color:var(--txt);min-width:42px;text-align:right">${fmt1(s.pct)}</span>
+      </div>
+    </div>`
+  ).join('');
+
+  // LP info row (subset note)
+  var lpNote = liqRaw > 0
+    ? `<div style="display:flex;align-items:center;justify-content:space-between;padding:.25rem 0;border-bottom:1px solid var(--bor)">
+        <div style="display:flex;align-items:center;gap:6px">
+          <span style="width:9px;height:9px;border-radius:2px;background:#22d3ee;flex-shrink:0;display:inline-block"></span>
+          <span style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--mut)">↳ in LP Pool</span>
+        </div>
+        <div style="display:flex;align-items:center;gap:.5rem">
+          <span style="font-family:'DM Mono',monospace;font-size:.55rem;color:var(--ash2)">${fmtP(Math.round(liqRaw))}</span>
+          <span style="font-family:'Chakra Petch',sans-serif;font-size:.65rem;font-weight:700;color:#22d3ee;min-width:42px;text-align:right">${fmt1(liqPct)}</span>
+        </div>
+      </div>`
+    : '';
+
+  distTd.innerHTML = `
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.55rem">
+      <span style="font-family:'DM Mono',monospace;font-size:.5rem;color:var(--mut);letter-spacing:.1em;text-transform:uppercase">Token Distribution</span>
+      ${!hasData ? '<span style="font-family:\'DM Mono\',monospace;font-size:.5rem;color:var(--ash2)">awaiting on-chain data</span>' : ''}
+    </div>
+    <div style="display:flex;height:11px;border-radius:6px;overflow:hidden;margin-bottom:.65rem;background:var(--sur)">${barHtml}</div>
+    <div style="display:flex;flex-direction:column">${legendHtml}${lpNote}</div>
+    ${liqRaw > 0 ? '<div style="font-family:\'DM Mono\',monospace;font-size:.48rem;color:var(--ash2);margin-top:.4rem">↳ LP tokens are a subset of Circulating supply · est. from pool USD ÷ price ÷ 2</div>' : ''}
+    <div id="distAllPools_${moatAddr}" style="margin-top:.7rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.5rem;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.35rem;display:flex;align-items:center;gap:6px">
+        💧 All Liquidity Pools <span class="spin" style="width:8px;height:8px;border-width:1.5px"></span>
+      </div>
+    </div>
+  `;
+  distTr.appendChild(distTd);
+  tbl.appendChild(distTr);
+
+  // ── Query DexScreener for ALL pools of this token ──
+  if (meta.tokenAddr) {
+    fetchAllTokenPools(moatAddr, meta.tokenAddr, price).catch(()=>{});
+  }
+}
+
+async function fetchAllTokenPools(moatAddr, tokenAddr, primaryPrice) {
+  const poolsEl = document.getElementById('distAllPools_' + moatAddr);
+  if (!poolsEl) return;
+  try {
+    const r = await fetch('https://api.dexscreener.com/latest/dex/tokens/' + tokenAddr).then(x=>x.json());
+    const pairs = (r.pairs||[])
+      .filter(p => (p.chainId==='avalanche'||p.chainId==='avax') && Number(p.liquidity?.usd||0)>0)
+      .sort((a,b) => Number(b.liquidity?.usd||0) - Number(a.liquidity?.usd||0));
+
+    if (!pairs.length) {
+      poolsEl.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:.5rem;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.35rem">💧 All Liquidity Pools</div><div style="font-family:\'DM Mono\',monospace;font-size:.6rem;color:var(--ash2)">No additional pools found.</div>';
+      return;
+    }
+
+    const totalLiq = pairs.reduce((s,p)=>s+Number(p.liquidity?.usd||0),0);
+    var poolsHtml = '<div style="font-family:\'DM Mono\',monospace;font-size:.5rem;color:var(--mut);text-transform:uppercase;letter-spacing:.08em;margin-bottom:.4rem">'
+      + '💧 All Liquidity Pools <span style="color:var(--cyn)">(' + pairs.length + ' found · ' + fmtK(totalLiq) + ' total)</span></div>';
+    pairs.forEach(function(p, i) {
+      var liq = Number(p.liquidity&&p.liquidity.usd||0);
+      var vol = Number(p.volume&&p.volume.h24||0);
+      var px  = Number(p.priceUsd||0);
+      var dex = p.dexId || 'Unknown';
+      var base = (p.baseToken&&p.baseToken.symbol) || '?';
+      var quote = (p.quoteToken&&p.quoteToken.symbol) || '?';
+      var isPrimary = i === 0;
+      var pctOfTotal = totalLiq > 0 ? (liq/totalLiq*100).toFixed(1) : '0';
+      var bg = isPrimary ? 'rgba(34,211,238,.04)' : 'var(--sur)';
+      var bord = isPrimary ? 'rgba(34,211,238,.25)' : 'var(--bor)';
+      var dexUrl = p.url || ('https://dexscreener.com/avalanche/' + (p.pairAddress||''));
+      poolsHtml += '<div style="background:' + bg + ';border:1px solid ' + bord + ';border-radius:8px;padding:.5rem .65rem;margin-bottom:.3rem">'
+        + '<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.25rem">'
+        + '<div style="display:flex;align-items:center;gap:5px">'
+        + (isPrimary ? '<span style="font-family:\'DM Mono\',monospace;font-size:.48rem;background:rgba(34,211,238,.15);color:var(--cyn);border-radius:3px;padding:1px 5px">PRIMARY</span>' : '')
+        + '<span style="font-family:\'Chakra Petch\',sans-serif;font-weight:700;font-size:.72rem;color:var(--txt)">' + base + '/' + quote + '</span>'
+        + '<span style="font-family:\'DM Mono\',monospace;font-size:.55rem;color:var(--mut)">' + dex + '</span>'
+        + '</div>'
+        + '<a href="' + dexUrl + '" target="_blank" style="font-family:\'DM Mono\',monospace;font-size:.52rem;color:var(--acc);text-decoration:none">↗ DEX</a>'
+        + '</div>'
+        + '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:.25rem">'
+        + '<div style="text-align:center"><div style="font-family:\'Chakra Petch\',sans-serif;font-weight:700;font-size:.68rem;color:var(--cyn)">' + fmtK(liq) + '</div><div style="font-family:\'DM Mono\',monospace;font-size:.45rem;color:var(--mut)">Liquidity</div></div>'
+        + '<div style="text-align:center"><div style="font-family:\'Chakra Petch\',sans-serif;font-weight:700;font-size:.68rem;color:var(--gld)">' + fmtK(vol) + '</div><div style="font-family:\'DM Mono\',monospace;font-size:.45rem;color:var(--mut)">24h Vol</div></div>'
+        + '<div style="text-align:center"><div style="font-family:\'Chakra Petch\',sans-serif;font-weight:700;font-size:.68rem;color:var(--acc)">$' + fmtPrice(px) + '</div><div style="font-family:\'DM Mono\',monospace;font-size:.45rem;color:var(--mut)">Price</div></div>'
+        + '<div style="text-align:center"><div style="font-family:\'Chakra Petch\',sans-serif;font-weight:700;font-size:.68rem;color:var(--dim)">' + pctOfTotal + '%</div><div style="font-family:\'DM Mono\',monospace;font-size:.45rem;color:var(--mut)">of Liq</div></div>'
+        + '</div></div>';
+    });
+    poolsEl.innerHTML = poolsHtml;
+  } catch(e) {
+    if (poolsEl) poolsEl.innerHTML = '<div style="font-family:\'DM Mono\',monospace;font-size:.5rem;color:var(--mut)">💧 All Liquidity Pools</div><div style="font-family:\'DM Mono\',monospace;font-size:.58rem;color:var(--ash2)">Could not load pool data.</div>';
+  }
 }
 
 function buildPriceChart(addr,price,ch24,vol24,liq,canvasId){
@@ -3355,22 +3599,29 @@ function renderEvItems(evs,id,freshIds=[]){
       ${logoImg(meta.logo,'moat-logo-sm',meta.emoji,meta.color)}<span>${meta.short||meta.name}</span>
     </span>`:'';
 
-    // Wallet — show profile pic + known name + .bensi name if available
-    const _ep2 = getKnownProfile(e.wallet);
-    const _zn2 = e.wallet ? (zephyrNames[e.wallet.toLowerCase()] || null) : null;
-    const _dispName = _ep2 ? ('@' + _ep2.twitter) : (_zn2 || shortA(e.wallet));
-    const _picHtml = _ep2
-      ? `<img src="${_ep2.pic}" style="width:18px;height:18px;border-radius:50%;object-fit:cover;border:1px solid var(--bor)" onerror="this.style.display='none'">`
-      : `<div style="width:18px;height:18px;border-radius:50%;background:var(--bor);display:flex;align-items:center;justify-content:center;font-size:.55rem;flex-shrink:0">${(e.wallet||'?')[2]?.toUpperCase()||'?'}</div>`;
-    const _bensiTag = _zn2 && _zn2.endsWith('.bensi')
-      ? `<span style="font-family:'DM Mono',monospace;font-size:.5rem;color:var(--gld);background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.22);border-radius:3px;padding:1px 4px">${_zn2}</span>` : '';
+    // Wallet chip — robust: works whether wallet comes from API or synth events
+    const _w2     = (e.wallet || e.user || e.from || e.walletAddress || e.address || '').toLowerCase();
+    const _ep2    = getKnownProfile(_w2);
+    const _zn2    = _w2 ? (zephyrNames[_w2] || null) : null;
+    const _dispName = _ep2 ? ('@' + _ep2.twitter) : (_zn2 || shortA(_w2));
+    const _picHtml  = _w2
+      ? (_ep2
+          ? `<img src="${_ep2.pic}" style="width:18px;height:18px;border-radius:50%;object-fit:cover;border:1px solid var(--bor);flex-shrink:0" onerror="this.style.display='none'">`
+          : `<div style="width:18px;height:18px;border-radius:50%;background:var(--bor);display:flex;align-items:center;justify-content:center;font-size:.55rem;color:var(--dim);flex-shrink:0;font-weight:700">${(_w2[2]||'?').toUpperCase()}</div>`)
+      : '';
+    const _bensiTag   = _zn2 && _zn2.endsWith('.bensi')
+      ? `<span style="font-family:'DM Mono',monospace;font-size:.5rem;color:var(--gld);background:rgba(212,168,67,.1);border:1px solid rgba(212,168,67,.22);border-radius:3px;padding:1px 4px">${_zn2}</span>`
+      : '';
     const _twitterTag = _ep2
-      ? `<a href="https://x.com/${_ep2.twitter}" target="_blank" onclick="event.stopPropagation()" style="font-family:'DM Mono',monospace;font-size:.52rem;color:var(--acc);text-decoration:none">@${_ep2.twitter}</a>` : '';
-    const wallet = e.wallet ? `<span class="wa" onclick="gotoW('${e.wallet}')" title="${e.wallet}" style="display:inline-flex;align-items:center;gap:4px;background:var(--sur);border:1px solid var(--bor);border-radius:6px;padding:2px 6px;cursor:pointer">
-      ${_picHtml}
-      <span style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--txt)">${_dispName}</span>
-      ${_bensiTag}${_twitterTag}
-    </span>` : '';
+      ? `<a href="https://x.com/${_ep2.twitter}" target="_blank" onclick="event.stopPropagation()" style="font-family:'DM Mono',monospace;font-size:.52rem;color:var(--acc);text-decoration:none">@${_ep2.twitter}</a>`
+      : '';
+    const wallet = _w2
+      ? `<span class="wa" onclick="gotoW('${_w2}')" title="${_w2}" style="display:inline-flex;align-items:center;gap:4px;background:var(--sur);border:1px solid var(--bor);border-radius:6px;padding:2px 6px;cursor:pointer">
+          ${_picHtml}
+          <span style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--txt)">${_dispName}</span>
+          ${_bensiTag}${_twitterTag}
+        </span>`
+      : '';
 
     // Token amount chip
     let amtChip='';
@@ -4498,57 +4749,110 @@ function lockM(d){
   return 5.00;
 }
 function onMoatSelChange(){
-  const addr=document.getElementById('cMoatSel').value;
-  const ctx=document.getElementById('moatCtx'),st=document.getElementById('moatCtxStats');
-  if(!addr||!moatMap[addr]){ctx.style.display='none';calcPts();return;}
-  const m=moatMap[addr],meta=MOATS[addr]||{};
-  ctx.style.display='block';
-  const supply=getSupply(addr);
-  let supplyLine='';
-  if(supply){
-    const dynTag=meta.supplyType==='dynamic'
-      ?'<span style="color:var(--gld)">&#9889; Dynamic &#8212; points may adjust</span>'
-      :'<span style="color:var(--grn)">&#128274; Fixed supply</span>';
-    supplyLine="<div style=\"grid-column:1/-1;margin-top:5px;font-family:monospace;font-size:.56rem;color:var(--dim);display:flex;align-items:center;gap:6px\">"
-      +"<span>Total Supply: <b style=\"color:var(--txt)\">" + fmtP(supply.totalSupply) + " " + (supply.symbol||meta.ticker) + "</b></span>"
-      + dynTag + "</div>";
-  } else {
-    supplyLine="<div style=\"grid-column:1/-1;margin-top:4px;font-size:.54rem;color:var(--mut)\"><span class=\"spin\"></span>Fetching supply&#8230;</div>";
-  }
-  st.innerHTML=`
-    <div style="text-align:center"><div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:.88rem;color:${meta.color}">${fmtP(m.totalPoints)}</div><div style="font-family:'DM Mono',monospace;font-size:.5rem;color:var(--mut);text-transform:uppercase">Live Pool</div></div>
-    <div style="text-align:center"><div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:.88rem">${m.walletCount}</div><div style="font-family:'DM Mono',monospace;font-size:.5rem;color:var(--mut);text-transform:uppercase">Wallets</div></div>
-    <div style="text-align:center"><div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:.88rem;color:var(--gld)">${Math.round(m.avgPoints)}</div><div style="font-family:'DM Mono',monospace;font-size:.5rem;color:var(--mut);text-transform:uppercase">Avg Pts</div></div>
-    ` + supplyLine + ``;
-  if(!supply&&meta.tokenAddr){
-    fetchTokenSupply(meta.tokenAddr).then(()=>onMoatSelChange());
-  }
-  calcPts();
+  const addr = document.getElementById('cMoatSel').value;
+  const ctx  = document.getElementById('moatCtx');
+  const st   = document.getElementById('moatCtxStats');
+  if (!addr || !moatMap[addr]) { if(ctx) ctx.style.display='none'; calcPts(); return; }
+
+  const m    = moatMap[addr] || {};
+  const meta = MOATS[addr]  || {};
+  if (ctx) ctx.style.display = 'block';
+
+  // Use knownSupply as primary source — NEVER await anything, UI stays instant
+  const knownSup = meta.knownSupply || 0;
+  // Try supplyCache first (may have been enriched), fall back to knownSupply
+  const cached = getSupply(addr);
+  const sup    = (cached && cached.totalSupply > 0) ? cached : (knownSup ? {totalSupply:knownSup, symbol:meta.ticker, decimals:18} : null);
+
+  // Estimated pts-per-token for rank preview
+  const ppt = (knownSup > 0) ? (1000000 / knownSup) : (estPtsPerToken(addr) || null);
+
+  const dynTag = meta.supplyType === 'dynamic'
+    ? '<span style="color:var(--gld)">⚡ Dynamic</span>'
+    : '<span style="color:var(--grn)">🔒 Fixed</span>';
+
+  const supplyLine = sup && sup.totalSupply > 0
+    ? '<div style="grid-column:1/-1;margin-top:5px;font-family:monospace;font-size:.56rem;color:var(--dim);display:flex;align-items:center;gap:8px">'
+      + '<span>Supply: <b style="color:var(--txt)">'+fmtP(sup.totalSupply)+' '+(sup.symbol||meta.ticker||'')+'</b></span>'
+      + dynTag
+      + (ppt ? '<span style="color:var(--acc)">~'+fmtPrice(ppt)+' pts/token (stake)</span>' : '')
+      + '</div>'
+    : '';
+
+  if (st) st.innerHTML =
+    `<div style="text-align:center"><div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:.88rem;color:${meta.color||'var(--acc)'}">${fmtP(m.totalPoints||0)}</div><div style="font-family:'DM Mono',monospace;font-size:.5rem;color:var(--mut);text-transform:uppercase">Live Pool</div></div>`
+    +`<div style="text-align:center"><div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:.88rem">${m.walletCount||0}</div><div style="font-family:'DM Mono',monospace;font-size:.5rem;color:var(--mut);text-transform:uppercase">Wallets</div></div>`
+    +`<div style="text-align:center"><div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:.88rem;color:var(--gld)">${Math.round(m.avgPoints||0)}</div><div style="font-family:'DM Mono',monospace;font-size:.5rem;color:var(--mut);text-transform:uppercase">Avg Pts</div></div>`
+    + supplyLine;
+
+  calcPts(); // always synchronous
 }
 function calcPts(){
-  const t=Number(document.getElementById('cTok').value)||0,a=document.getElementById('cAct').value;
-  const addr=document.getElementById('cMoatSel').value;
-  document.getElementById('lockRow').style.display=a==='lock'?'block':'none';
-  if(!t){document.getElementById('pRes').style.display='none';return;}
-  let m=a==='burn'?10:a==='lock'?lockM(document.getElementById('cDays').value):1;
-  const addr2=document.getElementById('cMoatSel').value;
-  const ppt2=addr2?estPtsPerToken(addr2):null;
-  const pts=ppt2!==null?t*ppt2*m:t*m;
-  const ptsNote=ppt2!==null?
-    `${f2(t)} tokens × ${fmtPrice(ppt2)} pts/token × ${m}×`:
-    `${f2(t)} × ${m}× (raw — no supply data)`;
-  document.getElementById('pRes').style.display='block';
-  setTxt('rT',f2(t));
-  setTxt('rM',m+'×'+(ppt2===null?' ⚠️ raw':''));
-  setTxt('rPt',fmtP(pts));
-  const ptsnEl=document.getElementById('rPtNote');
-  const ptsnRowEl=document.getElementById('rPtNoteRow');
-  if(ptsnEl){ptsnEl.textContent=ptsNote;if(ptsnRowEl)ptsnRowEl.style.display='flex';}
-  const rR=document.getElementById('rRankRow'),rS=document.getElementById('rShareRow');
-  if(addr&&moatMap[addr]){
-    const md=moatMap[addr],rank=md.sorted.findIndex(w=>w.points<pts)+1||md.walletCount+1,share=md.totalPoints?(pts/(md.totalPoints+pts)*100).toFixed(3):'100';
-    rR.style.display=rS.style.display='flex';setTxt('rRank','#'+rank+' of '+(md.walletCount+1));setTxt('rShare',share+'%');
-  }else{rR.style.display=rS.style.display='none';}
+  const t    = Number(document.getElementById('cTok').value) || 0;
+  const a    = document.getElementById('cAct').value;
+  const addr = document.getElementById('cMoatSel').value;
+  const meta = MOATS[addr] || {};
+  document.getElementById('lockRow').style.display = a === 'lock' ? 'block' : 'none';
+  if (!t) { document.getElementById('pRes').style.display = 'none'; return; }
+
+  const days       = Number(document.getElementById('cDays').value) || 180;
+  const multiplier = a === 'burn' ? 10 : a === 'lock' ? lockM(days) : 1;
+
+  // pts-per-token: knownSupply is the ground truth (hardcoded from moats.app docs)
+  // Formula: 1,000,000 base pts allocated per full token supply — standard Moats mechanic
+  const knownSup = meta.knownSupply || 0;
+  const cached   = getSupply(addr);
+  const supply   = (cached && cached.totalSupply > 0) ? cached.totalSupply : knownSup;
+  let ppt        = null;
+  let pptSource  = '';
+  if (supply > 0) {
+    ppt       = 1000000 / supply;
+    pptSource = 'hardcoded supply';
+  } else if (addr) {
+    ppt       = estPtsPerToken(addr);
+    pptSource = 'live estimate';
+  }
+
+  const pts = ppt !== null ? t * ppt * multiplier : t * multiplier;
+
+  // Formula note
+  let ptsNote = '';
+  if (ppt !== null) {
+    ptsNote = fmtP(t) + ' ' + (meta.ticker||'tokens') + ' × ' + fmtPrice(ppt) + ' pts/token (base) × ' + multiplier + '×';
+    if (a === 'lock') ptsNote += ' — ' + days + 'd lock';
+    if (a === 'burn') ptsNote += ' — permanent 🔥';
+  } else {
+    ptsNote = fmtP(t) + ' × ' + multiplier + '× — no supply data yet';
+  }
+
+  document.getElementById('pRes').style.display = 'block';
+  setTxt('rT',  fmtP(t));
+  setTxt('rM',  multiplier + '×');
+  setTxt('rPt', fmtP(pts));
+  const ptsnEl    = document.getElementById('rPtNote');
+  const ptsnRowEl = document.getElementById('rPtNoteRow');
+  if (ptsnEl) { ptsnEl.textContent = ptsNote; if (ptsnRowEl) ptsnRowEl.style.display = 'flex'; }
+
+  // Live rank projection using real leaderboard data
+  const rR = document.getElementById('rRankRow');
+  const rS = document.getElementById('rShareRow');
+  if (addr && moatMap[addr]) {
+    const md     = moatMap[addr];
+    const sorted = (md.sorted || []).slice();
+    // Find rank: count how many wallets have MORE pts than our projection
+    let rank = sorted.filter(w => (w.points || w.totalPoints || 0) > pts).length + 1;
+    const totalWallets  = (md.walletCount || sorted.length) + 1; // +1 for this wallet
+    const newPool       = (md.totalPoints || 0) + pts;
+    const share         = newPool > 0 ? (pts / newPool * 100).toFixed(3) : '100';
+    const percentile    = totalWallets > 1 ? (100 - ((rank - 1) / totalWallets * 100)).toFixed(1) : '100';
+    if (rR) rR.style.display = 'flex';
+    if (rS) rS.style.display = 'flex';
+    setTxt('rRank',  '#' + rank + ' of ' + totalWallets + ' (top ' + percentile + '%)');
+    setTxt('rShare', share + '% of pool');
+  } else {
+    if (rR) rR.style.display = 'none';
+    if (rS) rS.style.display = 'none';
+  }
 }
 function calcEEL(){
   const t=Number(document.getElementById('eT').value)||0,ld=Number(document.getElementById('eLD').value)||0,di=Number(document.getElementById('eDI').value)||0;
@@ -6118,33 +6422,255 @@ async function cmUpdatePreview() {
   }
 }
 
-// ── STEP RENDERER ──
+// ── STEP RENDERER — 3D Revolving Globe Carousel ──
 let cmSteps = [];
+let _cmGlobeAngle = 0;
+let _cmGlobeAnimId = null;
+let _cmGlobeFocusIdx = 0;
+let _cmGlobeCancelled = false;
+
 function cmAddStep(id, title, detail, state='waiting') {
   cmSteps.push({id, title, detail, state});
-  cmRenderSteps();
+  _cmGlobeFocusIdx = cmSteps.length - 1;
+  cmRenderGlobe();
 }
 function cmUpdateStep(id, state, detail) {
-  if(id==='__posswap__') return; // pos swap uses its own status UI
+  if(id==='__posswap__') return;
   const step = cmSteps.find(s=>s.id===id);
-  if (step) { step.state=state; if(detail!==undefined) step.detail=detail; cmRenderSteps(); }
+  if (step) {
+    step.state=state;
+    if(detail!==undefined) step.detail=detail;
+    if(state==='active') _cmGlobeFocusIdx = cmSteps.indexOf(step);
+    cmRenderGlobe();
+  }
 }
-function cmRenderSteps() {
+
+function cmRenderGlobe() {
   const el = document.getElementById('cmStepsList'); if (!el) return;
-  el.innerHTML = cmSteps.map((s,i) => {
-    const numContent = s.state==='done'?'✓':s.state==='error'?'✕':s.state==='active'?'<span class="spin"></span>':(i+1);
-    const txLinks = (s.detail||'').replace(/(0x[a-fA-F0-9]{64})/g, '<a href="https://snowtrace.io/tx/$1" target="_blank" style="color:var(--acc);font-size:.58rem">$1 ↗</a>');
-    return `<div class="cm-step ${s.state}">
-      <div class="cm-step-num">${numContent}</div>
-      <div class="cm-step-body">
-        <div class="cm-step-title">${s.title}</div>
-        <div class="cm-step-detail">${txLinks}</div>
-      </div>
+  if (!cmSteps.length) { el.innerHTML=''; return; }
+
+  // Preload moat logos into _imgCache so they're ready for the canvas
+  if (cmTargetMoats && typeof _loadImg === 'function') {
+    cmTargetMoats.forEach(m => {
+      if (m.meta?.logo) _loadImg(RAW + m.meta.logo);
+    });
+  }
+
+  // Build the 3D globe canvas + info panel
+  el.innerHTML = `
+    <div style="position:relative;background:rgba(20,18,16,.95);border:1px solid var(--bor);border-radius:14px;overflow:hidden;margin:.5rem 0">
+      <!-- Navigation arrows -->
+      <button onclick="cmGlobeNav(-1)" style="position:absolute;left:8px;top:50%;transform:translateY(-50%);z-index:10;background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.3);border-radius:50%;width:32px;height:32px;color:var(--acc);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center">◀</button>
+      <button onclick="cmGlobeNav(1)"  style="position:absolute;right:8px;top:50%;transform:translateY(-50%);z-index:10;background:rgba(249,115,22,.15);border:1px solid rgba(249,115,22,.3);border-radius:50%;width:32px;height:32px;color:var(--acc);font-size:1rem;cursor:pointer;display:flex;align-items:center;justify-content:center">▶</button>
+      <!-- Globe canvas -->
+      <canvas id="cmGlobeCanvas" width="320" height="200" style="width:100%;display:block"></canvas>
+      <!-- Focused step info -->
+      <div id="cmGlobeInfo" style="padding:.65rem 1rem .85rem;border-top:1px solid var(--bor)"></div>
+      <!-- Dot nav -->
+      <div id="cmGlobeDots" style="display:flex;justify-content:center;gap:5px;padding:.4rem 0 .7rem"></div>
     </div>`;
-  }).join('');
+
+  _cmDrawGlobe();
+  _cmUpdateGlobeInfo();
+  _cmUpdateGlobeDots();
+
   const done = cmSteps.filter(s=>s.state==='done').length;
   const bar = document.getElementById('cmProgressBar');
   if (bar) bar.style.width = cmSteps.length ? Math.round(done/cmSteps.length*100)+'%' : '0%';
+}
+
+function cmGlobeNav(dir) {
+  _cmGlobeFocusIdx = (_cmGlobeFocusIdx + dir + cmSteps.length) % cmSteps.length;
+  _cmDrawGlobe();
+  _cmUpdateGlobeInfo();
+  _cmUpdateGlobeDots();
+}
+
+function _cmUpdateGlobeDots() {
+  const dotsEl = document.getElementById('cmGlobeDots'); if (!dotsEl) return;
+  dotsEl.innerHTML = cmSteps.map((s,i) => {
+    const col = s.state==='done'?'var(--grn)':s.state==='active'?'var(--acc)':s.state==='error'?'var(--red)':'var(--bor)';
+    const size = i===_cmGlobeFocusIdx ? '10px' : '7px';
+    return `<div onclick="cmGlobeNavTo(${i})" style="width:${size};height:${size};border-radius:50%;background:${col};cursor:pointer;transition:all .2s;flex-shrink:0"></div>`;
+  }).join('');
+}
+
+window.cmGlobeNavTo = function(i) {
+  _cmGlobeFocusIdx = i;
+  _cmDrawGlobe();
+  _cmUpdateGlobeInfo();
+  _cmUpdateGlobeDots();
+};
+
+function _cmUpdateGlobeInfo() {
+  const infoEl = document.getElementById('cmGlobeInfo'); if (!infoEl || !cmSteps.length) return;
+  const s = cmSteps[_cmGlobeFocusIdx] || cmSteps[0];
+  const stateIcon = s.state==='done'?'<span style="color:var(--grn)">✅</span>':s.state==='error'?'<span style="color:var(--red)">❌</span>':s.state==='active'?'<span class="spin"></span>':'<span style="color:var(--mut)">○</span>';
+  const txLinks = (s.detail||'').replace(/(0x[a-fA-F0-9]{64})/g, '<a href="https://snowtrace.io/tx/$1" target="_blank" style="color:var(--acc);font-size:.58rem;word-break:break-all">$1 ↗</a>');
+  infoEl.innerHTML = `
+    <div style="display:flex;align-items:flex-start;gap:8px">
+      <div style="font-size:1.1rem;flex-shrink:0;margin-top:1px">${stateIcon}</div>
+      <div style="flex:1;min-width:0">
+        <div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:.8rem;color:var(--txt);margin-bottom:3px">${s.title}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--mut);line-height:1.55;word-break:break-all">${txLinks}</div>
+      </div>
+      <div style="font-family:'DM Mono',monospace;font-size:.52rem;color:var(--mut);flex-shrink:0">${_cmGlobeFocusIdx+1}/${cmSteps.length}</div>
+    </div>`;
+}
+
+function _cmDrawGlobe() {
+  const canvas = document.getElementById('cmGlobeCanvas'); if (!canvas) return;
+  if (_cmGlobeAnimId) cancelAnimationFrame(_cmGlobeAnimId);
+
+  const ctx = canvas.getContext('2d');
+  const W = canvas.width, H = canvas.height;
+  const cx = W/2, cy = H/2;
+  const R = 72; // globe radius
+  let angle = _cmGlobeAngle;
+
+  const STATE_COLORS = {done:'#6db87a',active:'#f97316',error:'#e05252',waiting:'#4a4540'};
+  const STATE_GLOW   = {done:'#6db87a44',active:'#f9731644',error:'#e0525244',waiting:'transparent'};
+
+  function drawFrame() {
+    ctx.clearRect(0,0,W,H);
+
+    // ── Globe wireframe ──
+    ctx.save();
+    ctx.globalAlpha=0.08;
+    for(let lat=-60;lat<=60;lat+=30){
+      const y=cy+Math.sin(lat*Math.PI/180)*R;
+      const rx=Math.cos(lat*Math.PI/180)*R;
+      ctx.beginPath();ctx.ellipse(cx,y,rx,rx*0.18,0,0,Math.PI*2);
+      ctx.strokeStyle='#f97316';ctx.lineWidth=0.7;ctx.stroke();
+    }
+    for(let lon=0;lon<180;lon+=30){
+      const a=lon*Math.PI/180+angle;
+      ctx.beginPath();ctx.ellipse(cx,cy,Math.abs(Math.cos(a))*R,R,0,0,Math.PI*2);
+      ctx.strokeStyle='#f97316';ctx.lineWidth=0.7;ctx.stroke();
+    }
+    ctx.restore();
+
+    // ── Globe sphere glow ──
+    const grd=ctx.createRadialGradient(cx-20,cy-20,10,cx,cy,R);
+    grd.addColorStop(0,'rgba(249,115,22,0.07)');
+    grd.addColorStop(1,'rgba(20,18,16,0)');
+    ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);
+    ctx.fillStyle=grd;ctx.fill();
+    ctx.beginPath();ctx.arc(cx,cy,R,0,Math.PI*2);
+    ctx.strokeStyle='rgba(249,115,22,0.2)';ctx.lineWidth=1.5;ctx.stroke();
+
+    // ── Place steps on globe surface ──
+    const n=cmSteps.length;
+    const positions=cmSteps.map((_,i)=>{
+      const phi=(i/n)*Math.PI*2 + angle;
+      const theta=Math.PI*0.3;
+      const x3d=Math.cos(phi)*Math.sin(theta);
+      const y3d=Math.cos(theta);
+      const z3d=Math.sin(phi)*Math.sin(theta);
+      const px2=cx+x3d*R;
+      const py2=cy-y3d*R*0.55;
+      const scale=0.5+0.5*((z3d+1)/2);
+      const depth=z3d;
+      return {i,px2,py2,scale,depth,s:cmSteps[i]};
+    });
+
+    positions.sort((a,b)=>a.depth-b.depth);
+
+    positions.forEach(pos=>{
+      const {i,px2,py2,scale,depth,s}=pos;
+      const isFocus=i===_cmGlobeFocusIdx;
+      const col=STATE_COLORS[s.state]||'#4a4540';
+      const glow=STATE_GLOW[s.state]||'transparent';
+      const r=isFocus?18*scale:13*scale;
+      const alpha=0.35+0.65*((depth+1)/2);
+
+      // Find the moat meta for this step — step id encodes moat index
+      // Steps are named like "moat_0_swap", "moat_0_approve", "lp_0", etc.
+      // We look up cmTargetMoats by iteration order
+      const moatIdx = parseInt((s.id||'').replace(/[^0-9]/g,'')) || i;
+      const moatMeta = (cmTargetMoats && cmTargetMoats[moatIdx]) ? cmTargetMoats[moatIdx].meta : null;
+      const moatCol = moatMeta?.color || col;
+      const logoSrc = moatMeta?.logo ? (RAW + moatMeta.logo) : null;
+      const logoImg = logoSrc ? (_imgCache[logoSrc] || _loadImg(logoSrc)) : null;
+
+      ctx.save();
+      ctx.globalAlpha=alpha;
+
+      // Glow halo
+      if(isFocus||s.state==='active'){
+        ctx.beginPath();ctx.arc(px2,py2,r+9,0,Math.PI*2);
+        ctx.fillStyle=(s.state==='active'?'#f9731633':moatCol+'22');
+        ctx.fill();
+        // Animated pulse ring for active
+        if(s.state==='active'){
+          const pulse=0.5+0.5*Math.sin(Date.now()*0.006);
+          ctx.beginPath();ctx.arc(px2,py2,r+5+pulse*6,0,Math.PI*2);
+          ctx.strokeStyle='#f97316';ctx.lineWidth=1;ctx.globalAlpha=alpha*0.4*pulse;ctx.stroke();
+          ctx.globalAlpha=alpha;
+        }
+      }
+
+      // Node circle background
+      ctx.beginPath();ctx.arc(px2,py2,r,0,Math.PI*2);
+      ctx.fillStyle=moatCol+'22';ctx.fill();
+      ctx.strokeStyle=s.state==='active'?'#f97316':s.state==='done'?'#6db87a':s.state==='error'?'#e05252':moatCol+'88';
+      ctx.lineWidth=isFocus?2.5:1.5;ctx.stroke();
+
+      // Draw moat logo if available, else emoji/fallback
+      if(logoImg && logoImg.complete && logoImg.naturalWidth > 0){
+        ctx.save();
+        ctx.beginPath();ctx.arc(px2,py2,r-2,0,Math.PI*2);ctx.clip();
+        ctx.drawImage(logoImg,px2-(r-2),py2-(r-2),(r-2)*2,(r-2)*2);
+        ctx.restore();
+        // State overlay for done/error/active
+        if(s.state!=='waiting'){
+          ctx.beginPath();ctx.arc(px2,py2,r,0,Math.PI*2);
+          ctx.fillStyle=s.state==='done'?'rgba(109,184,122,0.35)':s.state==='error'?'rgba(224,82,82,0.4)':s.state==='active'?'rgba(249,115,22,0.2)':'transparent';
+          ctx.fill();
+        }
+        // State badge (small circle in corner)
+        const bx=px2+r*0.65, by=py2-r*0.65, br=Math.max(4,r*0.38);
+        ctx.beginPath();ctx.arc(bx,by,br,0,Math.PI*2);
+        ctx.fillStyle=s.state==='done'?'#6db87a':s.state==='error'?'#e05252':s.state==='active'?'#f97316':'#332e28';
+        ctx.fill();
+        ctx.fillStyle='#141210';
+        ctx.font='bold '+Math.max(6,br*1.1)+'px DM Mono,monospace';
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        ctx.fillText(s.state==='done'?'✓':s.state==='error'?'✕':s.state==='active'?'●':(i+1).toString(),bx,by);
+      } else {
+        // Fallback: emoji or number
+        ctx.fillStyle='#f0ebe4';
+        ctx.font='bold '+Math.max(7,11*scale)+'px DM Mono,monospace';
+        ctx.textAlign='center';ctx.textBaseline='middle';
+        const icon=s.state==='done'?'✓':s.state==='error'?'✕':s.state==='active'?'●':(i+1).toString();
+        ctx.fillText(moatMeta?.emoji||icon,px2,py2);
+      }
+
+      // Label below node (focused + front-facing)
+      if(isFocus||depth>0.25){
+        ctx.font=(isFocus?'bold ':'')+Math.max(6,8*scale)+'px DM Mono,monospace';
+        ctx.fillStyle=isFocus?'#f0ebe4':'#8c8074';
+        ctx.textAlign='center';ctx.textBaseline='top';
+        const label=(moatMeta?.short||s.title).slice(0,14);
+        ctx.fillText(label,px2,py2+r+3*scale);
+      }
+      ctx.restore();
+    });
+
+    // Centre counter
+    ctx.save();
+    ctx.fillStyle='rgba(249,115,22,0.7)';
+    ctx.font='bold 9px Chakra Petch,sans-serif';
+    ctx.textAlign='center';ctx.textBaseline='middle';
+    const done=cmSteps.filter(s=>s.state==='done').length;
+    ctx.fillText(done+'/'+n+' done',cx,cy);
+    ctx.restore();
+
+    angle+=0.007;
+    _cmGlobeAngle=angle;
+    _cmGlobeAnimId=requestAnimationFrame(drawFrame);
+  }
+  drawFrame();
 }
 
 // ── MAIN EXECUTION ENGINE ──
@@ -6156,8 +6682,10 @@ async function cmExecute() {
   const selected = cmTargetMoats.filter(m => cmSelectedMoats.has(m.addr));
   if (!selected.length) { cmShowInlineError('Select at least one moat'); return; }
 
+  _cmGlobeCancelled = false;
   cmExecuting = true;
   cmSteps = [];
+  _cmGlobeFocusIdx = 0;
   cmRouteCache = {};
   document.getElementById('cmTxProgress').style.display = 'block';
   document.getElementById('cmExecuteBtn').disabled = true;
@@ -6165,10 +6693,33 @@ async function cmExecute() {
   document.getElementById('cmTxTitle').textContent = 'Executing Copy Strategy…';
   document.getElementById('cmTxResult').style.display = 'none';
 
+  // Show cancel button
+  let cancelBtn = document.getElementById('cmCancelExecBtn');
+  if (!cancelBtn) {
+    cancelBtn = document.createElement('button');
+    cancelBtn.id = 'cmCancelExecBtn';
+    cancelBtn.style.cssText = 'margin-top:.55rem;padding:.45rem 1rem;background:rgba(224,82,82,.1);border:1px solid rgba(224,82,82,.3);border-radius:8px;color:var(--red);font-family:\'DM Mono\',monospace;font-size:.68rem;cursor:pointer;display:block;width:100%';
+    cancelBtn.textContent = '✕ Cancel Execution';
+    document.getElementById('cmTxProgress').appendChild(cancelBtn);
+  }
+  cancelBtn.style.display = 'block';
+  cancelBtn.onclick = () => {
+    _cmGlobeCancelled = true;
+    cancelBtn.textContent = 'Cancelling…';
+    cancelBtn.disabled = true;
+    showAppNotif('Cancelling — finishing current transaction…','warn',3000);
+  };
+
   const totalPts = selected.reduce((s,m)=>s+m.pts, 0);
 
   try {
     for (let i = 0; i < selected.length; i++) {
+      // Check for cancellation before each moat
+      if (_cmGlobeCancelled) {
+        document.getElementById('cmTxTitle').textContent = '⚠️ Execution Cancelled';
+        showAppNotif('Execution cancelled by user','warn',3000);
+        break;
+      }
       const m = selected[i];
       const allocPct    = totalPts ? m.pts/totalPts : 1/selected.length;
       const moatUsd     = amtRaw * allocPct;
@@ -6428,7 +6979,13 @@ async function cmExecute() {
     cmShowTxResult(false, msg);
   }
   cmExecuting = false;
+  _cmGlobeCancelled = false;
   document.getElementById('cmExecuteBtn').disabled = false;
+  // Hide cancel button
+  const _cb = document.getElementById('cmCancelExecBtn');
+  if (_cb) { _cb.style.display = 'none'; _cb.disabled = false; _cb.textContent = '✕ Cancel Execution'; }
+  // Stop globe animation when done
+  if (_cmGlobeAnimId) { cancelAnimationFrame(_cmGlobeAnimId); _cmGlobeAnimId = null; }
 }
 
 function cmShowTxResult(success, msg) {
@@ -6816,6 +7373,19 @@ async function posLoadPositions() {
     setTxt('posPendingRew', totalRew>0 ? '~'+fmtP(totalRew)+' tokens' : '—');
     setTxt('posPortfolioVal', portVal>0 ? fmtK(portVal) : '—');
     document.getElementById('posSummary').style.display = 'block';
+
+    // Show Claim All banner if any moat has rewards AND wallet is connected (not read-only)
+    const moatsWithRewards = active.filter(r => r.rewards.length > 0 && !posIsReadOnly);
+    const claimBanner = document.getElementById('posClaimAllBanner');
+    if (claimBanner) {
+      if (moatsWithRewards.length > 0) {
+        claimBanner.style.display = 'block';
+        const desc = document.getElementById('posClaimAllDesc');
+        if (desc) desc.textContent = moatsWithRewards.length + ' moat' + (moatsWithRewards.length>1?'s':'')+' with pending rewards — claim all in one go';
+      } else {
+        claimBanner.style.display = 'none';
+      }
+    }
   }
 
   // Render active section
@@ -6992,7 +7562,11 @@ async function posOpenDetail(moatAddr) {
       <div style="display:flex;gap:0">${logoImg(meta?.logo,'moat-logo',meta?.emoji,col)}</div>
       <div style="flex:1;min-width:0">
         <div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:1.15rem">${meta?.name}</div>
-        <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--mut)">${meta?.ticker} · <a href="${meta?.url||'#'}" target="_blank" style="color:var(--acc)">moats.app ↗</a></div>
+        <div style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--mut);display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <span>${meta?.ticker}</span>
+        <a href="${meta?.url||'#'}" target="_blank" style="color:var(--acc)">moats.app ↗</a>
+        ${meta?.twitter ? `<a href="https://x.com/${meta.twitter}" target="_blank" style="color:var(--dim);text-decoration:none">𝕏 @${meta.twitter}</a>` : ''}
+      </div>
       </div>
       <div style="text-align:right;flex-shrink:0">
         <div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:1.4rem;color:${col}">${fmtP(myPts)}</div>
@@ -7572,6 +8146,87 @@ function backToPositions() {
   posActiveMoat = null;
 }
 
+// ── CLAIM ALL REWARDS (sequential, cancellable) ──
+let _claimAllCancelled = false;
+
+async function posClaimAllRewards() {
+  if (!posSigner || !posAddress) { showAppNotif('Connect wallet first','warn'); return; }
+  const moatsWithRewards = Object.values(posLoadedData||{}).filter(r => r.rewards && r.rewards.length > 0 && r.hasPosition);
+  if (!moatsWithRewards.length) { showAppNotif('No rewards to claim','info'); return; }
+
+  _claimAllCancelled = false;
+  const claimBtn   = document.getElementById('posClaimAllBtn');
+  const cancelBtn  = document.getElementById('posClaimCancelBtn');
+  const progress   = document.getElementById('posClaimAllProgress');
+  const spinner    = document.getElementById('posClaimSpinner');
+  const statusEl   = document.getElementById('posClaimStatus');
+  const logEl      = document.getElementById('posClaimLog');
+  const bar        = document.getElementById('posClaimProgressBar');
+
+  if (claimBtn)  claimBtn.disabled = true;
+  if (cancelBtn) cancelBtn.style.display = 'block';
+  if (progress)  progress.style.display = 'block';
+  if (logEl)     logEl.innerHTML = '';
+  if (bar)       bar.style.width = '0%';
+
+  const addLog = (msg, col='var(--mut)') => {
+    if (!logEl) return;
+    const line = document.createElement('div');
+    line.style.color = col;
+    line.style.marginBottom = '2px';
+    line.textContent = msg;
+    logEl.appendChild(line);
+    logEl.scrollTop = logEl.scrollHeight;
+  };
+
+  for (let i = 0; i < moatsWithRewards.length; i++) {
+    if (_claimAllCancelled) {
+      if (statusEl) statusEl.textContent = '❌ Cancelled by user';
+      addLog('Claim cancelled.', 'var(--gld)');
+      break;
+    }
+    const r = moatsWithRewards[i];
+    if (statusEl) statusEl.textContent = `Claiming from ${r.meta.name} (${i+1}/${moatsWithRewards.length})…`;
+    if (bar) bar.style.width = Math.round((i/moatsWithRewards.length)*100) + '%';
+    addLog(`⏳ ${r.meta.name} — sending claim…`);
+    try {
+      const moatContract = new ethers.Contract(r.moatAddr, MOAT_ABI, posSigner);
+      const tx = await moatContract.claimAllRewards();
+      addLog(`   Tx sent: ${tx.hash.slice(0,12)}… — waiting`, 'var(--dim)');
+      await tx.wait();
+      addLog(`   ✅ ${r.meta.name} rewards claimed!`, 'var(--grn)');
+    } catch(e) {
+      if (_claimAllCancelled) break;
+      const msg = e.reason || e.shortMessage || e.message || String(e);
+      const isReject = msg.includes('user rejected') || msg.includes('ACTION_REJECTED');
+      if (isReject) {
+        addLog(`   ⚠️ ${r.meta.name} — wallet rejected, skipping`, 'var(--gld)');
+      } else {
+        addLog(`   ❌ ${r.meta.name} — ${msg.slice(0,80)}`, 'var(--red)');
+      }
+    }
+  }
+
+  if (!_claimAllCancelled) {
+    if (bar) bar.style.width = '100%';
+    if (statusEl) statusEl.textContent = '✅ All claims processed!';
+    addLog('Done! Refresh to see updated balances.', 'var(--grn)');
+    showTxToast(true, 'All rewards claimed! 🎉', 'Check your wallet for received tokens.', null);
+    setTimeout(posLoadPositions, 3000);
+  }
+
+  if (claimBtn)  claimBtn.disabled = false;
+  if (cancelBtn) cancelBtn.style.display = 'none';
+  if (spinner)   spinner.style.display = 'none';
+}
+
+function posCancelClaimAll() {
+  _claimAllCancelled = true;
+  const cancelBtn = document.getElementById('posClaimCancelBtn');
+  if (cancelBtn) cancelBtn.style.display = 'none';
+  showAppNotif('Claim sequence cancelled','info',2500);
+}
+
 // ── ACTION TAB ──
 function posActionTab(tab, el) {
   document.querySelectorAll('[id^="posPane_"]').forEach(p=>p.style.display='none');
@@ -7726,17 +8381,33 @@ async function posExecuteSwap(moatAddr) {
 
 // ── POINTS CALCULATOR ──
 function posCalcPoints(action, amtStr, moatAddr) {
-  const amt = parseFloat(amtStr)||0;
+  const amt  = parseFloat(amtStr) || 0;
   if (!amt || !moatAddr) return;
-  const days = action==='lock' ? parseInt(document.getElementById('lockDays')?.value||180) : 0;
-  const mult = action==='burn' ? 10 : action==='lock' ? lockM(days) : 1;
-  const ppt  = estPtsPerToken(moatAddr);
-  const pts  = ppt ? amt*ppt*mult : amt*mult;
-  const m    = moatMap[moatAddr]||{};
-  const estRank = m.sorted?.length ? m.sorted.findIndex(w=>w.points<pts)+1||m.walletCount+1 : 1;
-  const share= m.totalPoints ? (pts/(m.totalPoints+pts)*100).toFixed(3) : '100';
-  const previewEl = document.getElementById(action+'Preview');
-  if (previewEl) previewEl.innerHTML = `${mult}× · ~${fmtP(pts)} pts · est. rank #${estRank} · ${share}% of pool`;
+  const meta = MOATS[moatAddr] || {};
+  const days = action === 'lock' ? parseInt(document.getElementById('lockDays')?.value || 180) : 0;
+  const mult = action === 'burn' ? 10 : action === 'lock' ? lockM(days) : 1;
+
+  // Use knownSupply as primary — same formula as estimator
+  const knownSup = meta.knownSupply || 0;
+  const cached   = getSupply(moatAddr);
+  const supplyV  = (cached && cached.totalSupply > 0) ? cached.totalSupply : knownSup;
+  const ppt      = supplyV > 0 ? (1000000 / supplyV) : estPtsPerToken(moatAddr);
+  const pts      = ppt ? amt * ppt * mult : amt * mult;
+
+  const m       = moatMap[moatAddr] || {};
+  const sorted  = m.sorted || [];
+  const rank    = sorted.filter(w => (w.points || 0) > pts).length + 1;
+  const newPool = (m.totalPoints || 0) + pts;
+  const share   = newPool > 0 ? (pts / newPool * 100).toFixed(3) : '100';
+  const percentile = sorted.length ? (100 - ((rank-1)/(sorted.length+1)*100)).toFixed(0) : '100';
+
+  const previewEl = document.getElementById(action + 'Preview');
+  if (previewEl) previewEl.innerHTML =
+    '<span style="color:var(--acc)">' + mult + '×</span>'
+    + ' · <b>~' + fmtP(pts) + ' pts</b>'
+    + ' · est. rank <span style="color:var(--gld)">#' + rank + '</span>'
+    + ' (top ' + percentile + '%)'
+    + ' · ' + share + '% of pool';
 }
 
 // ── STAKE ──
@@ -9171,6 +9842,1557 @@ function exportMoatLbCSV(moatAddr) {
   showAppNotif('Downloaded '+(meta ? meta.name : 'moat')+' leaderboard as CSV','success',2500);
 }
 
+
+
+// ══════════════════════════════════════════════════
+// ── BUBBLE MAP ENGINE ──
+// ══════════════════════════════════════════════════
+
+let _bubbleMapMoat = null;
+let _bubbleNodes   = [];
+let _bubbleAnimId  = null;
+const _imgCache    = {};
+
+function _loadImg(src) {
+  if (!src) return null;
+  if (_imgCache[src]) return _imgCache[src];
+  const img = new Image();
+  img.crossOrigin = 'anonymous';
+  img.src = src;
+  _imgCache[src] = img;
+  return img;
+}
+
+function renderBubbleMap(moatAddr, force=false) {
+  if (!moatAddr) return;
+  if (_bubbleMapMoat === moatAddr && !force) return;
+  _bubbleMapMoat = moatAddr;
+
+  const canvas = document.getElementById('bubbleMapCanvas');
+  const meta   = MOATS[moatAddr];
+  const m      = moatMap[moatAddr];
+  if (!canvas || !meta || !m || !m.sorted || !m.sorted.length) {
+    const cnt = document.getElementById('bubbleMapCount');
+    if (cnt) cnt.textContent = 'No data yet';
+    return;
+  }
+
+  const sorted = m.sorted.slice(0, 60); // top 60 wallets
+  const total  = m.totalPoints || 1;
+  const col    = meta.color || '#f97316';
+  const ticker = meta.ticker || 'tokens';
+
+  // Build node data — size by total token activity, not points
+  const nodes = sorted.map((entry, i) => {
+    const w       = getWallet(entry);
+    const pts     = entry.points || entry.totalPoints || 0;
+    const share   = pts / total;
+    const prof    = getKnownProfile(w);
+    const uname   = entry.username || zephyrNames[w] || (prof ? '@' + prof.twitter : null);
+    const pic     = prof ? prof.pic : RAW + 'photo_2026-03-14_06-11-33.jpg';
+    // Derive token amounts from actionType + tokenAmount field
+    // API gives tokenAmount (total tokens) and actionType (stake/lock/burn)
+    const tokAmt  = entry.tokenAmount || 0;
+    const at      = (entry.actionType || '').toLowerCase();
+    const avg2    = m.avgPoints || 1;
+    // Infer tier if actionType not explicit
+    const tier    = at.includes('burn') ? 'burn'
+                  : at.includes('lock') ? 'lock'
+                  : at.includes('stake') ? 'stake'
+                  : pts > avg2 * 5 ? 'burn'
+                  : pts > avg2 * 1.5 ? 'lock'
+                  : 'stake';
+    // Assign token amount to the right bucket
+    const staked  = tier === 'stake' ? tokAmt : 0;
+    const locked  = tier === 'lock'  ? tokAmt : 0;
+    const burned  = tier === 'burn'  ? tokAmt : 0;
+    const totalTok = tokAmt; // total tokens this wallet has in this moat
+
+    // Colour = dominant action tier
+    let nodeCol = col;
+    if (tier === 'burn')  nodeCol = '#e05252';
+    else if (tier === 'lock') nodeCol = '#d4a843';
+    else nodeCol = col;
+
+    return { w, pts, share, prof, uname, pic, nodeCol, rank: i+1, staked, locked, burned, totalTok, tier, entry };
+  });
+  _bubbleNodes = nodes;
+
+  const dpr    = window.devicePixelRatio || 1;
+  const W      = canvas.offsetWidth  || 600;
+  const H      = 500;
+  canvas.width  = W * dpr;
+  canvas.height = H * dpr;
+  canvas.style.height = H + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+
+  // Centre = moat logo bubble
+  const cx = W / 2, cy = H / 2;
+  const centerR = Math.min(W, H) * 0.085;
+
+  // Layout: spiral positioning around centre
+  const minR = 12, maxR = Math.min(W, H) * 0.085;
+  const maxPts = nodes[0]?.pts || 1;
+  const rings = [
+    { count: 1,  radius: centerR + maxR * 1.35 + 8 },
+    { count: 5,  radius: centerR + maxR * 1.35 + 8 + maxR * 1.6 + 10 },
+    { count: 10, radius: centerR + maxR * 1.35 + 8 + maxR * 1.6 + 10 + maxR * 1.2 + 10 },
+    { count: 16, radius: centerR + maxR * 1.35 + 8 + maxR * 1.6 + 10 + maxR * 1.2 + 10 + maxR * 0.9 + 10 },
+    { count: 99, radius: centerR + maxR * 1.35 + 8 + maxR * 1.6 + 10 + maxR * 1.2 + 10 + maxR * 0.9 + 10 + maxR * 0.7 + 10 },
+  ];
+
+  let nodeIdx = 0;
+  const positioned = [];
+  for (const ring of rings) {
+    const inRing = Math.min(ring.count, nodes.length - nodeIdx);
+    if (inRing <= 0) break;
+    const angleStep = (2 * Math.PI) / ring.count;
+    const angleOffset = -Math.PI / 2;
+    for (let j = 0; j < inRing; j++) {
+      const node = nodes[nodeIdx++];
+      const r = Math.max(minR, Math.sqrt(node.share) * maxR * 3.5);
+      const angle = angleOffset + j * angleStep;
+      const maxRing = ring.radius;
+      const x = cx + Math.cos(angle) * Math.min(maxRing, W/2 - r - 8);
+      const y = cy + Math.sin(angle) * Math.min(maxRing, H/2 - r - 8);
+      node.x = x; node.y = y; node.r = r;
+      positioned.push(node);
+    }
+    if (nodeIdx >= nodes.length) break;
+  }
+
+  // Preload all profile images
+  positioned.forEach(n => { if (n.pic) _loadImg(n.pic); });
+  if (meta.logo) _loadImg(RAW + meta.logo);
+
+  if (_bubbleAnimId) cancelAnimationFrame(_bubbleAnimId);
+  let hoveredNode = null;
+
+  function draw() {
+    ctx.clearRect(0, 0, W, H);
+
+    // Draw connections from centre to each bubble
+    positioned.forEach(n => {
+      const opacity   = Math.max(0.05, Math.min(0.3, n.share * 8));
+      const lineW     = Math.max(0.5, n.r * 0.12);
+      const nodeColor = n.nodeCol.startsWith('var') ? col : n.nodeCol;
+      ctx.save();
+      // Gradient line: moat colour → bubble colour
+      const grad = ctx.createLinearGradient(cx, cy, n.x, n.y);
+      grad.addColorStop(0, col + '80');
+      grad.addColorStop(1, nodeColor + '40');
+      ctx.strokeStyle = grad;
+      ctx.globalAlpha = opacity;
+      ctx.lineWidth   = lineW;
+      ctx.setLineDash(n.rank > 10 ? [3, 5] : []);
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.lineTo(n.x, n.y);
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    });
+
+    // Draw wallet bubbles
+    positioned.forEach(n => {
+      const isHov = hoveredNode === n;
+      const nodeColor = n.nodeCol.startsWith('var(') ? col : n.nodeCol;
+      const r = isHov ? n.r * 1.08 : n.r;
+
+      ctx.save();
+      // Pulse ring for top 3 wallets (animated)
+      if (n.rank <= 3) {
+        const pulse = 0.5 + 0.5 * Math.sin(Date.now() / 400 + n.rank * 1.2);
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(n.x, n.y, r + 4 + pulse * 5, 0, Math.PI * 2);
+        ctx.strokeStyle = nodeColor;
+        ctx.globalAlpha = 0.18 + pulse * 0.12;
+        ctx.lineWidth   = 2;
+        ctx.stroke();
+        ctx.restore();
+      }
+      // Glow on hover
+      if (isHov) {
+        ctx.shadowColor = nodeColor;
+        ctx.shadowBlur  = 20;
+      }
+      // Fill
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r, 0, Math.PI * 2);
+      ctx.fillStyle = nodeColor + '28';
+      ctx.fill();
+      ctx.strokeStyle = nodeColor;
+      ctx.lineWidth = isHov ? 2.5 : 1.5;
+      ctx.stroke();
+      ctx.restore();
+
+      // Profile picture or initials
+      const img = n.pic ? _imgCache[n.pic] : null;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, r - 2, 0, Math.PI * 2);
+      ctx.clip();
+      if (img && img.complete && img.naturalWidth > 0) {
+        const s = (r - 2) * 2;
+        ctx.drawImage(img, n.x - r + 2, n.y - r + 2, s, s);
+      } else {
+        ctx.fillStyle = nodeColor + '44';
+        ctx.fillRect(n.x - r, n.y - r, r * 2, r * 2);
+        ctx.fillStyle = '#fff';
+        ctx.font = `bold ${Math.max(8, r * 0.55)}px 'Chakra Petch',sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText((n.w[2] || '?').toUpperCase(), n.x, n.y);
+      }
+      ctx.restore();
+
+      // Rank badge (top 3)
+      if (n.rank <= 3 && r > 14) {
+        const badges = ['🥇','🥈','🥉'];
+        ctx.font = `${Math.max(10, r*0.5)}px serif`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(badges[n.rank-1], n.x + r*0.6, n.y - r*0.6);
+      }
+
+      // Label below bubble — name + token amount
+      if (r > 14) {
+        const label = n.uname
+          ? (n.uname.length > 12 ? n.uname.slice(0,11) + '…' : n.uname)
+          : n.w.slice(0,4) + '…' + n.w.slice(-3);
+        const totalTok = n.totalTok || 0;
+        const tokLabel = totalTok > 0
+          ? (totalTok >= 1e9 ? (totalTok/1e9).toFixed(1)+'B'
+            : totalTok >= 1e6 ? (totalTok/1e6).toFixed(1)+'M'
+            : totalTok >= 1e3 ? (totalTok/1e3).toFixed(1)+'K'
+            : totalTok.toFixed(0)) + ' ' + ticker
+          : '';
+        const fontSize = Math.max(7, r * 0.3);
+        ctx.save();
+        ctx.shadowColor = '#000';
+        ctx.shadowBlur  = 5;
+        ctx.textAlign = 'center';
+        // Name line
+        ctx.fillStyle = '#f0ebe4';
+        ctx.font = `${fontSize}px 'DM Mono',monospace`;
+        ctx.fillText(label, n.x, n.y + r + 9);
+        // Token amount line
+        if (tokLabel && r > 20) {
+          const nodeColor = n.nodeCol.startsWith('var(') ? col : n.nodeCol;
+          ctx.fillStyle = nodeColor;
+          ctx.font = `bold ${Math.max(6, fontSize * 0.85)}px 'DM Mono',monospace`;
+          ctx.fillText(tokLabel, n.x, n.y + r + 9 + fontSize + 2);
+        }
+        ctx.restore();
+      }
+    });
+
+    // Draw centre moat bubble
+    ctx.save();
+    if (meta.logo && _imgCache[RAW + meta.logo]) {
+      const img = _imgCache[RAW + meta.logo];
+      if (img.complete && img.naturalWidth > 0) {
+        ctx.beginPath();
+        ctx.arc(cx, cy, centerR, 0, Math.PI*2);
+        ctx.fillStyle = col + '22';
+        ctx.fill();
+        ctx.strokeStyle = col;
+        ctx.lineWidth = 2.5;
+        ctx.stroke();
+        ctx.clip();
+        ctx.drawImage(img, cx-centerR, cy-centerR, centerR*2, centerR*2);
+      }
+    } else {
+      ctx.beginPath();
+      ctx.arc(cx, cy, centerR, 0, Math.PI*2);
+      ctx.fillStyle = col + '33';
+      ctx.fill();
+      ctx.strokeStyle = col;
+      ctx.lineWidth = 2.5;
+      ctx.stroke();
+      ctx.fillStyle = '#fff';
+      ctx.font = `bold ${centerR * 0.55}px 'Chakra Petch',sans-serif`;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(meta.emoji || meta.short, cx, cy);
+    }
+    ctx.restore();
+    // Moat label below centre
+    ctx.fillStyle = col;
+    ctx.font = `bold ${Math.max(9,centerR*0.38)}px 'Chakra Petch',sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'top';
+    ctx.fillText(meta.short, cx, cy + centerR + 4);
+
+    _bubbleAnimId = requestAnimationFrame(draw);
+  }
+  draw();
+
+  // Update count badge
+  const cnt = document.getElementById('bubbleMapCount');
+  if (cnt) cnt.textContent = positioned.length + ' wallets';
+
+  // ── Interaction: hover & click ──
+  function getBubbleAt(mx, my) {
+    for (const n of positioned) {
+      const dx = mx - n.x, dy = my - n.y;
+      if (dx*dx + dy*dy <= n.r*n.r) return n;
+    }
+    return null;
+  }
+
+  function showBubbleDetail(n) {
+    if (!n) { document.getElementById('bubbleMapDetail').style.display='none'; return; }
+    const detail = document.getElementById('bubbleMapDetail');
+    detail.style.display = 'block';
+    setTimeout(()=>detail.scrollIntoView({behavior:'smooth',block:'nearest'}),50);
+
+    const picEl    = document.getElementById('bmd-pic');
+    const prof     = n.prof;
+    const nodeColor = n.nodeCol.startsWith('var(') ? col : n.nodeCol;
+
+    picEl.style.border = '2px solid ' + nodeColor;
+    if (prof) {
+      picEl.innerHTML = `<img src="${prof.pic}" style="width:38px;height:38px;object-fit:cover;border-radius:50%" onerror="this.parentElement.innerHTML='<span style=font-size:1.1rem>${(n.w[2]||'?').toUpperCase()}</span>'">`;
+    } else {
+      picEl.style.background = nodeColor + '33';
+      picEl.innerHTML = `<span style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:1.1rem;color:#fff">${(n.w[2]||'?').toUpperCase()}</span>`;
+    }
+
+    const nameEl = document.getElementById('bmd-name');
+    nameEl.innerHTML = (n.uname || shortA(n.w))
+      + (prof ? ` <a href="https://x.com/${prof.twitter}" target="_blank" style="font-size:.62rem;color:var(--acc);text-decoration:none;margin-left:4px">@${prof.twitter} ↗</a>` : '');
+
+    const addrEl = document.getElementById('bmd-addr');
+    addrEl.innerHTML = `<span style="opacity:.7">${n.w.slice(0,10)}…${n.w.slice(-6)}</span>
+      <button onclick="navigator.clipboard.writeText('${n.w}').then(()=>showAppNotif('Address copied!','success',1500))" style="background:none;border:none;cursor:pointer;color:var(--acc);font-size:.7rem;padding:0 3px" title="Copy address">⧉</button>`;
+    addrEl.dataset.addr = n.w;
+
+    // Staked / locked / burned breakdown
+    const staked  = n.staked  || 0;
+    const locked  = n.locked  || 0;
+    const burned  = n.burned  || 0;
+    const totalTok = staked + locked + burned;
+    const metaM   = MOATS[moatAddr] || {};
+    const ticker  = metaM.ticker || 'tokens';
+
+    const barHtml = totalTok > 0
+      ? `<div style="margin:.5rem 0 .3rem;font-family:'DM Mono',monospace;font-size:.52rem;color:var(--mut);text-transform:uppercase;letter-spacing:.07em">Token Activity</div>
+         <div style="display:flex;height:6px;border-radius:99px;overflow:hidden;gap:1px;margin-bottom:.4rem">
+           ${staked>0 ? `<div style="flex:${staked};background:${col}" title="Staked: ${fmtP(staked)} ${ticker}"></div>` : ''}
+           ${locked>0 ? `<div style="flex:${locked};background:var(--gld)" title="Locked: ${fmtP(locked)} ${ticker}"></div>` : ''}
+           ${burned>0 ? `<div style="flex:${burned};background:var(--red)" title="Burned: ${fmtP(burned)} ${ticker}"></div>` : ''}
+         </div>
+         <div style="display:flex;gap:10px;font-family:'DM Mono',monospace;font-size:.55rem;flex-wrap:wrap">
+           ${staked>0 ? `<span style="color:${col}">🔒 ${fmtP(staked)} staked</span>` : ''}
+           ${locked>0 ? `<span style="color:var(--gld)">⏳ ${fmtP(locked)} locked</span>` : ''}
+           ${burned>0 ? `<span style="color:var(--red)">🔥 ${fmtP(burned)} burned</span>` : ''}
+         </div>`
+      : '';
+
+    const moatsCount = Object.keys(moatMap).filter(a => moatMap[a].sorted?.some(e=>getWallet(e)===n.w)).length || 1;
+    const cs = fmtP(Math.round(n.pts * cMult(moatsCount)));
+
+    const statsEl = document.getElementById('bmd-stats');
+    statsEl.innerHTML = [
+      { label:'Rank',          val:'#' + n.rank,                      c:'var(--gld)' },
+      { label:'Points',        val:fmtP(n.pts),                       c:'var(--acc)' },
+      { label:'Pool Share',    val:(n.pts/total*100).toFixed(3)+'%',  c:'var(--dim)' },
+      { label:'Council Score', val:cs,                                c:'var(--pur)' },
+    ].map(s=>`<div style="background:var(--sur);border:1px solid var(--bor);border-radius:7px;padding:.45rem;text-align:center">
+        <div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:.82rem;color:${s.c}">${s.val}</div>
+        <div style="font-family:'DM Mono',monospace;font-size:.48rem;color:var(--mut);text-transform:uppercase">${s.label}</div>
+      </div>`).join('')
+    + (barHtml ? `<div style="grid-column:1/-1;background:var(--sur);border:1px solid var(--bor);border-radius:7px;padding:.55rem .7rem">${barHtml}</div>` : '');
+  }
+
+  // ── Interaction: hover, click, and DRAG ──
+  function evPt(ev) {
+    const rect = canvas.getBoundingClientRect();
+    const scaleX = W / rect.width;   // account for CSS scaling
+    const scaleY = H / rect.height;
+    const clientX = ev.touches ? ev.touches[0].clientX : ev.changedTouches ? ev.changedTouches[0].clientX : ev.clientX;
+    const clientY = ev.touches ? ev.touches[0].clientY : ev.changedTouches ? ev.changedTouches[0].clientY : ev.clientY;
+    return { x: (clientX - rect.left) * scaleX, y: (clientY - rect.top) * scaleY };
+  }
+
+  function getBubbleAt(mx, my) {
+    // Reverse iterate so topmost drawn bubble is hit first
+    for (let i = positioned.length - 1; i >= 0; i--) {
+      const n = positioned[i];
+      const dx = mx - n.x, dy = my - n.y;
+      if (dx*dx + dy*dy <= n.r*n.r) return n;
+    }
+    return null;
+  }
+
+  let dragNode   = null;
+  let dragOffX   = 0, dragOffY = 0;
+  let isDragging = false;
+  let dragStartX = 0, dragStartY = 0;
+
+  function startDrag(ev) {
+    const {x, y} = evPt(ev);
+    const n = getBubbleAt(x, y);
+    if (n) {
+      dragNode   = n;
+      dragOffX   = x - n.x;
+      dragOffY   = y - n.y;
+      isDragging = false;
+      dragStartX = x;
+      dragStartY = y;
+      canvas.style.cursor = 'grabbing';
+      ev.preventDefault();
+    }
+  }
+
+  function moveDrag(ev) {
+    if (!dragNode) {
+      // Just hover
+      const {x, y} = evPt(ev);
+      const n = getBubbleAt(x, y);
+      hoveredNode = n;
+      canvas.style.cursor = n ? 'grab' : 'default';
+      return;
+    }
+    ev.preventDefault();
+    const {x, y} = evPt(ev);
+    const dx = x - dragStartX, dy = y - dragStartY;
+    if (!isDragging && (dx*dx + dy*dy > 16)) isDragging = true;
+    if (isDragging) {
+      dragNode.x = Math.max(dragNode.r + 4, Math.min(W - dragNode.r - 4, x - dragOffX));
+      dragNode.y = Math.max(dragNode.r + 4, Math.min(H - dragNode.r - 4, y - dragOffY));
+    }
+  }
+
+  function endDrag(ev) {
+    if (dragNode && !isDragging) {
+      // It was a click, not a drag — show detail
+      showBubbleDetail(dragNode);
+    } else if (!dragNode) {
+      // Clicked empty canvas
+      const {x, y} = evPt(ev);
+      if (!getBubbleAt(x, y)) {
+        document.getElementById('bubbleMapDetail').style.display = 'none';
+      }
+    }
+    dragNode   = null;
+    isDragging = false;
+    canvas.style.cursor = 'default';
+  }
+
+  canvas.addEventListener('mousedown',  startDrag, { passive: false });
+  canvas.addEventListener('mousemove',  moveDrag,  { passive: true  });
+  canvas.addEventListener('mouseup',    endDrag);
+  canvas.addEventListener('mouseleave', () => { dragNode = null; isDragging = false; hoveredNode = null; canvas.style.cursor = 'default'; });
+  canvas.addEventListener('touchstart', startDrag, { passive: false });
+  canvas.addEventListener('touchmove',  moveDrag,  { passive: false });
+  canvas.addEventListener('touchend',   endDrag,   { passive: true  });
+}
+
+
+
+// ═══════════════════════════════════════════════════════════
+// ── ANIMATED GUIDE — How Moats Work ──
+// ═══════════════════════════════════════════════════════════
+
+const GUIDE_SLIDES = [
+  {
+    id: 'welcome',
+    title: 'Welcome to Moats',
+    subtitle: 'A new DeFi primitive on Avalanche',
+    body: 'Moats are tokenised vaults where you commit tokens to earn points, governance power, and ecosystem rewards.',
+    bg: ['#141210','#1c1916'],
+    accent: '#f97316',
+    draw: (ctx, W, H, t, imgs) => {
+      // Animated moat logo centre
+      const cx = W/2, cy = H/2 - 20;
+      const pulse = 1 + 0.06*Math.sin(t*2);
+      // Outer ring
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, 70*pulse, 0, Math.PI*2);
+      ctx.strokeStyle = '#f97316';
+      ctx.globalAlpha = 0.15 + 0.1*Math.sin(t*1.5);
+      ctx.lineWidth = 18;
+      ctx.stroke();
+      ctx.restore();
+      // Inner ring
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx, cy, 50*pulse, 0, Math.PI*2);
+      ctx.strokeStyle = '#f97316';
+      ctx.globalAlpha = 0.25 + 0.1*Math.sin(t*2);
+      ctx.lineWidth = 10;
+      ctx.stroke();
+      ctx.restore();
+      // Logo
+      const img = imgs['moatsintel'];
+      if (img && img.complete && img.naturalWidth) {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, cy, 42, 0, Math.PI*2);
+        ctx.clip();
+        ctx.drawImage(img, cx-42, cy-42, 84, 84);
+        ctx.restore();
+      } else {
+        ctx.save();
+        ctx.beginPath();
+        ctx.arc(cx, cy, 42, 0, Math.PI*2);
+        ctx.fillStyle = '#f9731633';
+        ctx.fill();
+        ctx.fillStyle = '#f97316';
+        ctx.font = 'bold 36px Chakra Petch,sans-serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.fillText('⬡', cx, cy);
+        ctx.restore();
+      }
+      // Orbiting token icons
+      const orbitR = 115;
+      const tokens = ['🔒','⏳','🔥','💰','🏆'];
+      tokens.forEach((tok, i) => {
+        const angle = t*0.6 + (i/tokens.length)*Math.PI*2;
+        const ox = cx + Math.cos(angle)*orbitR;
+        const oy = cy + Math.sin(angle)*orbitR;
+        ctx.save();
+        ctx.font = '20px serif';
+        ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+        ctx.globalAlpha = 0.7 + 0.3*Math.sin(t+i);
+        ctx.fillText(tok, ox, oy);
+        ctx.restore();
+      });
+      // Avalanche logo area
+      const avalImg = imgs['avalanche'];
+      if (avalImg && avalImg.complete) {
+        ctx.save();
+        ctx.globalAlpha = 0.55;
+        ctx.drawImage(avalImg, cx-16, cy+58, 32, 32);
+        ctx.restore();
+      }
+    }
+  },
+  {
+    id: 'tokens',
+    title: 'Step 1 — Get Moat Tokens',
+    subtitle: '11 unique tokens across the ecosystem',
+    body: 'Each Moat has its own token — $hefe, $freak, $hcash, $balln, $super, $vit, $lil, $dimish, $bensi, $malek. Swap AVAX or USDC to get them.',
+    bg: ['#141210','#1c1916'],
+    accent: '#22d3ee',
+    draw: (ctx, W, H, t, imgs) => {
+      const moatLogos = ['Hefelogo-new.png','FREAK_Anon.png','hashcashclub.png','balln-token.jpg','supercycle.jpg',
+                         'VIT-Logo-Alternative-2.jpg','LIL-Coq-Logo.png','Dimish1000px.png','Bensi-Box-logo-new.jpg','wheremalek.jpg'];
+      const moatColors = ['#f97316','#8c8074','#d4a843','#f43f5e','#818cf8','#22d3ee','#fb7185','#a78bfa','#fbbf24','#34d399'];
+      const cols = 5, rows = 2;
+      const cellW = (W-60)/cols, cellH = 90;
+      const startX = 30, startY = H/2 - rows*cellH/2 + 15;
+      for (let i=0; i<10; i++) {
+        const col = i%cols, row = Math.floor(i/cols);
+        const cx = startX + col*cellW + cellW/2;
+        const cy = startY + row*cellH + cellH/2;
+        const delay = i*0.15;
+        const scale = 0.85 + 0.15*Math.sin(t*1.2 + delay);
+        const imgKey = 'logo_'+i;
+        const img = imgs[imgKey];
+        ctx.save();
+        ctx.translate(cx, cy);
+        ctx.scale(scale, scale);
+        // Circle bg
+        ctx.beginPath();
+        ctx.arc(0, 0, 26, 0, Math.PI*2);
+        ctx.fillStyle = moatColors[i]+'22';
+        ctx.fill();
+        ctx.strokeStyle = moatColors[i]+'88';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        if (img && img.complete && img.naturalWidth) {
+          ctx.save();
+          ctx.beginPath();
+          ctx.arc(0,0,23,0,Math.PI*2);
+          ctx.clip();
+          ctx.drawImage(img,-23,-23,46,46);
+          ctx.restore();
+        } else {
+          ctx.fillStyle = moatColors[i];
+          ctx.font = 'bold 14px Chakra Petch,sans-serif';
+          ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText(['$H','$F','$hC','$B','$S','$V','$L','$D','$BN','$M'][i],0,0);
+        }
+        // Shimmer coin bounce
+        const bounceY = -3*Math.sin(t*1.5+delay);
+        ctx.translate(0, bounceY);
+        ctx.restore();
+      }
+      // Arrow: USDC/AVAX → tokens
+      const arrowX = W/2;
+      ctx.save();
+      ctx.fillStyle = '#22d3ee';
+      ctx.globalAlpha = 0.6 + 0.4*Math.sin(t*2);
+      ctx.font = '14px DM Mono,monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('Swap AVAX / USDC → get tokens', arrowX, 28);
+      ctx.restore();
+    }
+  },
+  {
+    id: 'stake',
+    title: 'Step 2 — Stake (1×)',
+    subtitle: 'Flexible. Exit anytime. 0.5% fee.',
+    body: 'Deposit your tokens into a Moat. You earn Moat Points at 1× rate. Unstake any time — a 0.5% fee applies on exit.',
+    bg: ['#141210','#1c1916'],
+    accent: '#f97316',
+    draw: (ctx, W, H, t, imgs) => {
+      const cx = W/2, cy = H/2 + 10;
+      // Vault box
+      const vx = cx-55, vy = cy-55, vw = 110, vh = 90;
+      ctx.save();
+      ctx.fillStyle = '#f9731614';
+      ctx.strokeStyle = '#f97316';
+      ctx.lineWidth = 2;
+      _roundRect(ctx, vx, vy, vw, vh, 12);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#f97316';
+      ctx.font = 'bold 11px DM Mono,monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('MOAT VAULT', cx, vy+18);
+      ctx.font = '28px serif';
+      ctx.fillText('⬡', cx, cy+12);
+      ctx.restore();
+      // Token flowing in
+      const flowX = cx - 130 + (Math.sin(t*1.8)+1)*55;
+      const flowY = cy - 5;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(flowX, flowY, 14, 0, Math.PI*2);
+      ctx.fillStyle = '#f9731644';
+      ctx.fill();
+      ctx.strokeStyle = '#f97316';
+      ctx.lineWidth = 1.5;
+      ctx.stroke();
+      ctx.fillStyle = '#f97316';
+      ctx.font = 'bold 10px DM Mono,monospace';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('$', flowX, flowY);
+      ctx.restore();
+      // Arrow
+      ctx.save();
+      ctx.strokeStyle = '#f97316';
+      ctx.lineWidth = 1.5;
+      ctx.globalAlpha = 0.5;
+      ctx.setLineDash([4,4]);
+      ctx.beginPath();
+      ctx.moveTo(cx-130, cy-5);
+      ctx.lineTo(vx, cy-5);
+      ctx.stroke();
+      ctx.restore();
+      // Points badge
+      const ptBounce = -4*Math.sin(t*2);
+      ctx.save();
+      ctx.translate(cx+110, cy-30+ptBounce);
+      ctx.fillStyle = '#f9731622';
+      _roundRect(ctx,0,0,72,36,8);
+      ctx.fill();
+      ctx.fillStyle = '#f97316';
+      ctx.font = 'bold 13px Chakra Petch,sans-serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('1× PTS', 36, 12);
+      ctx.font = '9px DM Mono,monospace';
+      ctx.fillStyle = '#a89880';
+      ctx.fillText('Moat Points', 36, 26);
+      ctx.restore();
+    }
+  },
+  {
+    id: 'lock',
+    title: 'Step 3 — Lock (2×–5×)',
+    subtitle: 'Commit longer. Earn more.',
+    body: 'Lock tokens for 1–730 days and earn a multiplier from 2.04× (1 day) up to 5.00× (730 days). Early exit incurs the EEL penalty.',
+    bg: ['#141210','#1c1916'],
+    accent: '#d4a843',
+    draw: (ctx, W, H, t, imgs) => {
+      const cx = W/2, cy = H/2 + 15;
+
+      // ── VAULT BOX ──
+      const vx = cx - 52, vy = cy - 95, vw = 104, vh = 80;
+      ctx.save();
+      ctx.fillStyle = '#d4a84314';
+      ctx.strokeStyle = '#d4a843';
+      ctx.lineWidth = 2;
+      _roundRect(ctx, vx, vy, vw, vh, 12);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#d4a843';
+      ctx.font = 'bold 10px DM Mono,monospace';
+      ctx.textAlign = 'center';
+      ctx.fillText('MOAT VAULT', cx, vy+16);
+      ctx.font = '22px serif';
+      ctx.fillText('🏰', cx, vy+50);
+      ctx.restore();
+
+      // ── TOKENS ENTERING VAULT (randomized moat token images) ──
+      const moatLogoKeys = ['logo_0','logo_1','logo_2','logo_3','logo_4','logo_5','logo_6','logo_7','logo_8','logo_9'];
+      const moatColors = ['#f97316','#8c8074','#d4a843','#f43f5e','#818cf8','#22d3ee','#fb7185','#a78bfa','#fbbf24','#34d399'];
+      const moatTickers = ['$H','$F','$hC','$B','$S','$V','$L','$D','$BN','$M'];
+      // 3 tokens fly in at offset times
+      [0, 1.2, 2.4].forEach((offset, idx) => {
+        const phase = ((t * 0.8 + offset) % 3) / 3; // 0..1 journey
+        const tokenIdx = (idx * 3 + Math.floor(t * 0.3 + idx)) % 10;
+        const startX = cx - 145 + idx * 15;
+        const endX = cx - 10;
+        const startY = cy - 58 + idx * 8;
+        const endY = cy - 58;
+        const tx2 = startX + (endX - startX) * Math.min(phase * 1.4, 1);
+        const ty2 = startY + (endY - startY) * Math.min(phase * 1.4, 1);
+        const alpha = phase < 0.85 ? 1 : 1 - (phase - 0.85) / 0.15;
+        if (phase > 0.98) return; // hidden when inside vault
+        ctx.save();
+        ctx.globalAlpha = alpha;
+        ctx.beginPath();
+        ctx.arc(tx2, ty2, 13, 0, Math.PI*2);
+        ctx.fillStyle = moatColors[tokenIdx] + '33';
+        ctx.fill();
+        ctx.strokeStyle = moatColors[tokenIdx];
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        const logoImg = imgs[moatLogoKeys[tokenIdx]];
+        if (logoImg && logoImg.complete && logoImg.naturalWidth) {
+          ctx.save(); ctx.beginPath(); ctx.arc(tx2, ty2, 11, 0, Math.PI*2); ctx.clip();
+          ctx.drawImage(logoImg, tx2-11, ty2-11, 22, 22); ctx.restore();
+        } else {
+          ctx.fillStyle = moatColors[tokenIdx];
+          ctx.font = 'bold 8px DM Mono,monospace';
+          ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+          ctx.fillText(moatTickers[tokenIdx], tx2, ty2);
+        }
+        ctx.restore();
+      });
+
+      // ── TIMELINE BAR ──
+      const barX = 35, barY = cy + 5, barW = W-70, barH = 14;
+      ctx.save();
+      ctx.fillStyle = '#332e28';
+      _roundRect(ctx, barX, barY, barW, barH, 7);
+      ctx.fill();
+      // Progress glow
+      const prog = (Math.sin(t*0.7)+1)/2;
+      ctx.fillStyle = '#d4a843';
+      _roundRect(ctx, barX, barY, barW*prog, barH, 7);
+      ctx.fill();
+      ctx.restore();
+      // Day labels
+      [[0,'1d 2.04×'],[0.137,'90d 2.73×'],[0.274,'180d 3.23×'],[0.548,'365d 4×'],[1,'730d 5×']].forEach(([p,lbl])=>{
+        const bx = barX + barW*p;
+        ctx.save();
+        ctx.strokeStyle = p <= prog ? '#d4a843' : '#6b5f54';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(bx, barY-5);
+        ctx.lineTo(bx, barY+barH+5);
+        ctx.stroke();
+        ctx.fillStyle = p <= prog ? '#d4a843' : '#6b5f54';
+        ctx.font = '9px DM Mono,monospace';
+        ctx.textAlign='center';
+        ctx.fillText(lbl, bx, barY-12);
+        ctx.restore();
+      });
+      // Animated multiplier badge
+      const mult = 2.04 + (5.00-2.04)*prog;
+      ctx.save();
+      ctx.translate(cx, cy-55);
+      const bScale = 1 + 0.05*Math.sin(t*3);
+      ctx.scale(bScale, bScale);
+      ctx.fillStyle = '#d4a84344';
+      _roundRect(ctx, -45, -22, 90, 44, 10);
+      ctx.fill();
+      ctx.strokeStyle = '#d4a843';
+      ctx.lineWidth = 1.5;
+      _roundRect(ctx, -45, -22, 90, 44, 10);
+      ctx.stroke();
+      ctx.fillStyle = '#d4a843';
+      ctx.font = 'bold 22px Chakra Petch,sans-serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(mult.toFixed(2)+'×', 0, -2);
+      ctx.font = '9px DM Mono,monospace';
+      ctx.fillStyle = '#a89880';
+      ctx.fillText('multiplier', 0, 14);
+      ctx.restore();
+      // Lock icon
+      ctx.save();
+      ctx.font = '24px serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('🔐', cx - 100, cy - 45);
+      ctx.restore();
+    }
+  },
+  {
+    id: 'burn',
+    title: 'Step 4 — Burn (10×)',
+    subtitle: 'Permanent commitment. Maximum points.',
+    body: 'Burning tokens removes them forever from circulation — in return you earn 10× points permanently. This is the highest commitment level.',
+    bg: ['#141210','#1c1916'],
+    accent: '#e05252',
+    draw: (ctx, W, H, t, imgs) => {
+      const cx = W/2, cy = H/2 + 10;
+      // Fire particle system
+      for (let i=0; i<28; i++) {
+        const seed = i * 2.39998 + t * 0.8;
+        const px = cx + Math.sin(seed)*40*(0.5+0.5*Math.sin(seed*3));
+        const py = cy + 25 - (((t*60 + i*20)%120));
+        const size = 3 + 5*Math.abs(Math.sin(seed*2));
+        const alpha = Math.max(0, 1 - ((t*60+i*20)%120)/120);
+        ctx.save();
+        const grad = ctx.createRadialGradient(px,py,0,px,py,size);
+        grad.addColorStop(0, `rgba(255,200,50,${alpha})`);
+        grad.addColorStop(0.5, `rgba(224,82,82,${alpha*0.7})`);
+        grad.addColorStop(1, `rgba(0,0,0,0)`);
+        ctx.fillStyle = grad;
+        ctx.beginPath();
+        ctx.arc(px,py,size,0,Math.PI*2);
+        ctx.fill();
+        ctx.restore();
+      }
+      // Token being consumed — use rotating moat logos
+      ctx.save();
+      const burnAlpha = 0.5 + 0.35*Math.sin(t*3);
+      const tokenIdx = Math.floor(t/3) % Object.values(MOATS).length;
+      const tokenLogoKey = 'logo_' + tokenIdx;
+      const tokenMeta = Object.values(MOATS)[tokenIdx];
+      const tokenColor = tokenMeta ? tokenMeta.color : '#e05252';
+      const tImg = imgs[tokenLogoKey];
+      ctx.globalAlpha = burnAlpha;
+      ctx.beginPath();
+      ctx.arc(cx, cy+18, 22, 0, Math.PI*2);
+      ctx.fillStyle = tokenColor+'33';
+      ctx.fill();
+      ctx.strokeStyle = tokenColor;
+      ctx.lineWidth = 2;
+      ctx.stroke();
+      if(tImg && tImg.complete && tImg.naturalWidth){
+        ctx.save(); ctx.beginPath(); ctx.arc(cx,cy+18,19,0,Math.PI*2); ctx.clip();
+        ctx.drawImage(tImg,cx-19,cy+18-19,38,38); ctx.restore();
+      } else {
+        ctx.fillStyle = tokenColor;
+        ctx.font = 'bold 9px DM Mono,monospace';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText(tokenMeta?tokenMeta.ticker:'$TOKEN', cx, cy+18);
+      }
+      ctx.restore();
+      // 10× badge
+      ctx.save();
+      ctx.translate(cx+105, cy-35);
+      ctx.fillStyle = '#e0525233';
+      _roundRect(ctx,-38,-22,76,44,10);
+      ctx.fill();
+      ctx.strokeStyle='#e05252'; ctx.lineWidth=1.5;
+      _roundRect(ctx,-38,-22,76,44,10);
+      ctx.stroke();
+      ctx.fillStyle='#e05252';
+      ctx.font='bold 24px Chakra Petch,sans-serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('10×',0,-2);
+      ctx.font='9px DM Mono,monospace'; ctx.fillStyle='#a89880';
+      ctx.fillText('PERMANENT',0,14);
+      ctx.restore();
+      // DEAD address label
+      ctx.save();
+      ctx.fillStyle='#6b5f54';
+      ctx.font='9px DM Mono,monospace';
+      ctx.textAlign='center';
+      ctx.fillText('→ sent to 0x000...dead forever', cx, cy+52);
+      ctx.restore();
+    }
+  },
+  {
+    id: 'council',
+    title: 'Step 5 — Council Score',
+    subtitle: 'Your governance power.',
+    body: 'Council Score = Total Points × Diversity Multiplier. Holding moats in 2+ ecosystems boosts your multiplier up to 1.5×. More moats = more power.',
+    bg: ['#141210','#1c1916'],
+    accent: '#a78bfa',
+    draw: (ctx, W, H, t, imgs) => {
+      const cx = W/2, cy = H/2 + 10;
+      // Central score
+      const score = Math.round(125000 + 15000*Math.sin(t*0.5));
+      ctx.save();
+      ctx.fillStyle='#a78bfa22';
+      _roundRect(ctx,cx-70,cy-38,140,76,14);
+      ctx.fill();
+      ctx.strokeStyle='#a78bfa';
+      ctx.lineWidth=2;
+      _roundRect(ctx,cx-70,cy-38,140,76,14);
+      ctx.stroke();
+      ctx.fillStyle='#a78bfa';
+      ctx.font='bold 28px Chakra Petch,sans-serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText(fmtP(score),cx,cy-5);
+      ctx.font='10px DM Mono,monospace'; ctx.fillStyle='#a89880';
+      ctx.fillText('COUNCIL SCORE',cx,cy+18);
+      ctx.restore();
+      // Formula chips
+      const chips=[
+        {lbl:'Total Points',val:'250K',col:'#f97316',x:cx-175},
+        {lbl:'Diversity Mult',val:'1.50×',col:'#d4a843',x:cx-175},
+      ];
+      chips.forEach((c,i)=>{
+        ctx.save();
+        ctx.translate(c.x,cy-55+i*40);
+        ctx.fillStyle=c.col+'22'; _roundRect(ctx,0,-18,110,36,8); ctx.fill();
+        ctx.strokeStyle=c.col; ctx.lineWidth=1; _roundRect(ctx,0,-18,110,36,8); ctx.stroke();
+        ctx.fillStyle=c.col; ctx.font='bold 13px Chakra Petch,sans-serif';
+        ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillText(c.val,55,-4);
+        ctx.font='8px DM Mono,monospace'; ctx.fillStyle='#a89880';
+        ctx.fillText(c.lbl,55,11);
+        ctx.restore();
+        // Arrow →
+        ctx.save();
+        ctx.fillStyle=c.col; ctx.font='bold 14px serif';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('→',cx-55,cy-55+i*40);
+        ctx.restore();
+      });
+      // × symbol
+      ctx.save();
+      ctx.fillStyle='#a78bfa'; ctx.font='bold 18px serif';
+      ctx.textAlign='center'; ctx.textBaseline='middle';
+      ctx.fillText('×',cx-175+55,cy-35+20);
+      ctx.restore();
+      // Diversity stars
+      const numMoats = Math.floor(1 + (t%6));
+      const mults=[1.0,1.1,1.25,1.5,1.5,1.5];
+      ctx.save();
+      ctx.fillStyle='#d4a843'; ctx.font='11px DM Mono,monospace';
+      ctx.textAlign='left';
+      ctx.fillText('Moats held: '+numMoats+' → '+mults[Math.min(numMoats-1,5)]+'×', cx+10, cy+40);
+      ctx.restore();
+    }
+  },
+  {
+    id: 'eel',
+    title: 'Step 6 — EEL Penalty',
+    subtitle: 'Early Exit = penalty on locked tokens.',
+    body: 'Exit a lock early and you forfeit up to 95% of locked tokens. 95% are burned, 5% go to the protocol. The longer you\'ve waited, the lower the penalty.',
+    bg: ['#141210','#1c1916'],
+    accent: '#e05252',
+    draw: (ctx, W, H, t, imgs) => {
+      const cx=W/2, cy=H/2+10;
+      // EEL scale bar
+      const barX=40, barY=cy-10, barW=W-80, barH=18;
+      // Background
+      ctx.save();
+      ctx.fillStyle='#332e28';
+      _roundRect(ctx,barX,barY,barW,barH,9); ctx.fill();
+      // Gradient fill: red→green
+      const grad=ctx.createLinearGradient(barX,0,barX+barW,0);
+      grad.addColorStop(0,'#e05252');
+      grad.addColorStop(0.5,'#d4a843');
+      grad.addColorStop(1,'#6db87a');
+      ctx.fillStyle=grad;
+      _roundRect(ctx,barX,barY,barW,barH,9); ctx.fill();
+      ctx.restore();
+      // Penalty labels
+      const pts=[[0,'95%'],[0.1,'90%'],[0.2,'80%'],[0.3,'70%'],[0.5,'60%'],[0.6,'50%'],[0.8,'30%'],[0.9,'20%'],[1,'0%']];
+      pts.filter((_,i)=>i%2===0).forEach(([p,lbl])=>{
+        const bx=barX+barW*p;
+        ctx.save();
+        ctx.strokeStyle='#141210'; ctx.lineWidth=1.5;
+        ctx.beginPath(); ctx.moveTo(bx,barY); ctx.lineTo(bx,barY+barH); ctx.stroke();
+        ctx.fillStyle='#f0ebe4'; ctx.font='8px DM Mono,monospace';
+        ctx.textAlign='center';
+        ctx.fillText(p===0?'Start':p===1?'Done':'',bx,barY+barH+12);
+        ctx.fillText(lbl,bx,barY-6);
+        ctx.restore();
+      });
+      // Animated cursor (bounces left→right)
+      const cursorP=(Math.sin(t*0.7)+1)/2;
+      const cx2=barX+barW*cursorP;
+      ctx.save();
+      ctx.fillStyle='#fff';
+      ctx.strokeStyle='#141210'; ctx.lineWidth=1;
+      ctx.beginPath();
+      ctx.moveTo(cx2-8,barY-16);
+      ctx.lineTo(cx2+8,barY-16);
+      ctx.lineTo(cx2,barY-2);
+      ctx.closePath();
+      ctx.fill(); ctx.stroke();
+      const penalty=Math.round(95*(1-cursorP));
+      ctx.fillStyle=penalty>50?'#e05252':penalty>20?'#d4a843':'#6db87a';
+      ctx.font='bold 11px DM Mono,monospace';
+      ctx.textAlign='center';
+      ctx.fillText(penalty+'% penalty',cx2,barY-22);
+      ctx.restore();
+      // Bottom note
+      ctx.save();
+      ctx.fillStyle='#6b5f54'; ctx.font='9px DM Mono,monospace';
+      ctx.textAlign='center';
+      ctx.fillText('95% of forfeited tokens → burned · 5% → protocol', cx, cy+45);
+      ctx.restore();
+    }
+  },
+  {
+    id: 'ecosystem',
+    title: 'The Moats Ecosystem',
+    subtitle: '11 moats. One connected fortress.',
+    body: 'Participate across multiple moats to boost your Diversity Multiplier. Stack your Council Score, claim rewards from multiple pools, and build your fortress on Avalanche.',
+    bg: ['#141210','#1c1916'],
+    accent: '#34d399',
+    draw: (ctx, W, H, t, imgs) => {
+      const cx=W/2, cy=H/2+5;
+      // Centre: moats.app logo
+      const img=imgs['moatsmain'];
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(cx,cy,36,0,Math.PI*2);
+      ctx.fillStyle='#34d39922'; ctx.fill();
+      ctx.strokeStyle='#34d399'; ctx.lineWidth=2; ctx.stroke();
+      if(img&&img.complete&&img.naturalWidth){
+        ctx.save(); ctx.beginPath(); ctx.arc(cx,cy,33,0,Math.PI*2); ctx.clip();
+        ctx.drawImage(img,cx-33,cy-33,66,66); ctx.restore();
+      } else {
+        ctx.fillStyle='#34d399'; ctx.font='bold 18px Chakra Petch,sans-serif';
+        ctx.textAlign='center'; ctx.textBaseline='middle';
+        ctx.fillText('MOATS',cx,cy);
+      }
+      ctx.restore();
+      // Orbiting moat logos
+      const moatLogoKeys = Object.values(MOATS).map((_,i)=>'logo_'+i);
+      const moatColors=['#f97316','#d4a843','#8c8074','#f43f5e','#818cf8','#22d3ee','#fb7185','#a78bfa','#fbbf24','#34d399'];
+      const moatTickers=['$H','$hC','$F','$B','$S','$V','$L','$D','$BN','$M'];
+      const orbitR=105;
+      moatLogoKeys.forEach((k,i)=>{
+        const angle=t*0.4+(i/moatLogoKeys.length)*Math.PI*2;
+        const ox=cx+Math.cos(angle)*orbitR;
+        const oy=cy+Math.sin(angle)*orbitR;
+        const r=18;
+        ctx.save();
+        // connection line
+        ctx.strokeStyle=moatColors[i]+'44'; ctx.lineWidth=1;
+        ctx.globalAlpha=0.3;
+        ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(ox,oy); ctx.stroke();
+        ctx.globalAlpha=1;
+        // circle bg
+        ctx.beginPath(); ctx.arc(ox,oy,r,0,Math.PI*2);
+        ctx.fillStyle=moatColors[i]+'33'; ctx.fill();
+        ctx.strokeStyle=moatColors[i]+'88'; ctx.lineWidth=1.5; ctx.stroke();
+        // logo or fallback
+        const logoImg=imgs[k];
+        if(logoImg&&logoImg.complete&&logoImg.naturalWidth){
+          ctx.save(); ctx.beginPath(); ctx.arc(ox,oy,r-2,0,Math.PI*2); ctx.clip();
+          ctx.drawImage(logoImg,ox-(r-2),oy-(r-2),(r-2)*2,(r-2)*2); ctx.restore();
+        } else {
+          ctx.fillStyle=moatColors[i]; ctx.font='bold 9px DM Mono,monospace';
+          ctx.textAlign='center'; ctx.textBaseline='middle';
+          ctx.fillText(moatTickers[i],ox,oy);
+        }
+        ctx.restore();
+      });
+      // CTA label
+      ctx.save();
+      ctx.fillStyle='#34d399'; ctx.font='bold 11px Chakra Petch,sans-serif';
+      ctx.textAlign='center';
+      ctx.fillText('Build your fortress across all 11 moats 🏰', cx, cy+H/2-28);
+      ctx.restore();
+    }
+  }
+];
+
+// Helper
+function _roundRect(ctx,x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
+}
+
+let _guideSlide = 0;
+let _guideAnim  = null;
+let _guideAuto  = false;
+let _guideAutoTimer = null;
+let _guideT     = 0;
+let _guideImgs  = {};
+
+function _guideLoadImgs() {
+  const toLoad = {
+    'moatsintel': RAW + 'moatsintelloadingimage-removebg-preview.png',
+    'moatsmain':  RAW + 'moats.appmain_logo-removebg-preview.png',
+  };
+  // moat logos
+  Object.values(MOATS).forEach((m,i) => {
+    if (m.logo) toLoad['logo_'+i] = RAW + m.logo;
+  });
+  Object.entries(toLoad).forEach(([k,src]) => {
+    if (!_guideImgs[k]) {
+      const img = new Image(); img.src = src;
+      img.onload = () => _guideImgs[k] = img;
+      _guideImgs[k] = img;
+    }
+  });
+}
+
+function _guideRender() {
+  const canvas = document.getElementById('guideCanvas');
+  if (!canvas) { cancelAnimationFrame(_guideAnim); return; }
+  const dpr = window.devicePixelRatio || 1;
+  const W   = canvas.offsetWidth || 600;
+  const H   = 380;
+  if (canvas.width !== W*dpr || canvas.height !== H*dpr) {
+    canvas.width = W*dpr; canvas.height = H*dpr;
+    canvas.style.height = H+'px';
+  }
+  const ctx = canvas.getContext('2d');
+  ctx.scale(dpr, dpr);
+  ctx.save();
+  ctx.setTransform(1,0,0,1,0,0);
+  ctx.scale(dpr, dpr);
+
+  const slide = GUIDE_SLIDES[_guideSlide];
+  const t     = _guideT;
+
+  // Background gradient
+  const bgGrad = ctx.createLinearGradient(0,0,W,H);
+  bgGrad.addColorStop(0, slide.bg[0]);
+  bgGrad.addColorStop(1, slide.bg[1]);
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0,0,W,H);
+
+  // Subtle grid overlay
+  ctx.save();
+  ctx.strokeStyle = slide.accent+'09';
+  ctx.lineWidth = 0.5;
+  for(let gx=0;gx<W;gx+=36){ ctx.beginPath(); ctx.moveTo(gx,0); ctx.lineTo(gx,H); ctx.stroke(); }
+  for(let gy=0;gy<H;gy+=36){ ctx.beginPath(); ctx.moveTo(0,gy); ctx.lineTo(W,gy); ctx.stroke(); }
+  ctx.restore();
+
+  // Radial vignette
+  ctx.save();
+  const vign = ctx.createRadialGradient(W/2,H/2,H*0.25,W/2,H/2,H*0.85);
+  vign.addColorStop(0,'rgba(0,0,0,0)');
+  vign.addColorStop(1,'rgba(0,0,0,0.55)');
+  ctx.fillStyle = vign;
+  ctx.fillRect(0,0,W,H);
+  ctx.restore();
+
+  // Accent glow blob (top-right)
+  ctx.save();
+  const blob = ctx.createRadialGradient(W*0.82,H*0.18,0,W*0.82,H*0.18,W*0.32);
+  blob.addColorStop(0, slide.accent+'18');
+  blob.addColorStop(1, 'rgba(0,0,0,0)');
+  ctx.fillStyle = blob;
+  ctx.fillRect(0,0,W,H);
+  ctx.restore();
+
+  // Draw slide content
+  ctx.save();
+  try { slide.draw(ctx, W, H, t, _guideImgs); } catch(e){}
+  ctx.restore();
+
+  // Title bar at bottom
+  const titleH = 80;
+  ctx.save();
+  const titleGrad = ctx.createLinearGradient(0,H-titleH,0,H);
+  titleGrad.addColorStop(0, '#14121000');
+  titleGrad.addColorStop(0.25, '#141210f0');
+  titleGrad.addColorStop(1, '#141210');
+  ctx.fillStyle = titleGrad;
+  ctx.fillRect(0, H-titleH, W, titleH);
+
+  // Accent left bar
+  ctx.fillStyle = slide.accent;
+  ctx.fillRect(0, H-titleH+8, 3, titleH-8);
+
+  // Step badge
+  const stepNum = _guideSlide + 1;
+  const badgeW = 28;
+  ctx.fillStyle = slide.accent+'33';
+  _roundRect(ctx, 14, H-62, badgeW, 18, 4); ctx.fill();
+  ctx.fillStyle = slide.accent;
+  ctx.font = 'bold 9px DM Mono,monospace';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(stepNum+'/'+GUIDE_SLIDES.length, 14+badgeW/2, H-53);
+
+  // Title
+  ctx.fillStyle = slide.accent;
+  ctx.font = 'bold 14px Chakra Petch,sans-serif';
+  ctx.textAlign = 'left'; ctx.textBaseline = 'alphabetic';
+  ctx.fillText(slide.title, 52, H-52);
+
+  // Subtitle
+  ctx.fillStyle = '#a89880';
+  ctx.font = '500 9.5px Barlow,sans-serif';
+  ctx.fillText(slide.subtitle, 52, H-38);
+
+  // Body text (wrapped)
+  ctx.fillStyle = '#f0ebe4bb';
+  ctx.font = '9.5px Barlow,sans-serif';
+  _wrapText(ctx, slide.body, 16, H-22, W-32, 12);
+  ctx.restore();
+
+  ctx.restore();
+  _guideT += 0.016;
+  _guideAnim = requestAnimationFrame(_guideRender);
+}
+
+function _wrapText(ctx, text, x, y, maxW, lineH) {
+  const words = text.split(' ');
+  let line = '';
+  let ly = y;
+  for (const word of words) {
+    const test = line + word + ' ';
+    if (ctx.measureText(test).width > maxW && line !== '') {
+      ctx.fillText(line, x, ly);
+      line = word + ' ';
+      ly += lineH;
+    } else {
+      line = test;
+    }
+  }
+  if (line) ctx.fillText(line, x, ly);
+}
+
+function _guideBuildDots() {
+  const el = document.getElementById('guideDots');
+  if (!el) return;
+  el.innerHTML = GUIDE_SLIDES.map((s,i) =>
+    `<button onclick="guideGoTo(${i})" style="width:${i===_guideSlide?22:8}px;height:8px;border-radius:4px;border:none;background:${i===_guideSlide?GUIDE_SLIDES[i].accent:'var(--bor)'};cursor:pointer;transition:all .25s;padding:0"></button>`
+  ).join('');
+}
+
+function _guideUpdateUI() {
+  const lbl = document.getElementById('guideSlideLabel');
+  if (lbl) lbl.textContent = (_guideSlide+1)+' / '+GUIDE_SLIDES.length;
+  const prog = document.getElementById('guideProgress');
+  if (prog) prog.style.width = ((_guideSlide+1)/GUIDE_SLIDES.length*100)+'%';
+  _guideBuildDots();
+  _guideT = 0;
+}
+
+function guideGoTo(i) {
+  _guideSlide = Math.max(0, Math.min(GUIDE_SLIDES.length-1, i));
+  _guideUpdateUI();
+}
+
+function guideStep(dir) {
+  guideGoTo(_guideSlide + dir);
+}
+
+function guidePlay() {
+  const btn = document.getElementById('guidePlayBtn');
+  _guideAuto = !_guideAuto;
+  if (btn) btn.textContent = _guideAuto ? '⏸ Pause' : '▶ Auto-Play';
+  if (_guideAuto) {
+    _guideAutoTimer = setInterval(() => {
+      const next = (_guideSlide + 1) % GUIDE_SLIDES.length;
+      guideGoTo(next);
+    }, 5000);
+  } else {
+    clearInterval(_guideAutoTimer);
+  }
+}
+
+// Boot guide when guide tab becomes visible
+function _guideBoot() {
+  _guideLoadImgs();
+  _guideUpdateUI();
+  if (_guideAnim) cancelAnimationFrame(_guideAnim);
+  _guideRender();
+}
+
+// Swipe support on canvas
+(function(){
+  let sx=0, sy=0;
+  document.addEventListener('DOMContentLoaded', () => {
+    const c = document.getElementById('guideCanvas');
+    if (!c) return;
+    c.addEventListener('touchstart', e => { sx=e.touches[0].clientX; sy=e.touches[0].clientY; }, {passive:true});
+    c.addEventListener('touchend', e => {
+      const dx = e.changedTouches[0].clientX - sx;
+      const dy = e.changedTouches[0].clientY - sy;
+      if (Math.abs(dx) > 40 && Math.abs(dx) > Math.abs(dy)) {
+        guideStep(dx < 0 ? 1 : -1);
+      }
+    }, {passive:true});
+  });
+})();
+
+</script>
+
+<!-- ── PRESENCE TOGGLE STUB (ensures onclick works before IIFE runs) ── -->
+<script>
+function togglePresencePanel(){
+  const panel=document.getElementById('presencePanel');
+  const bg=document.getElementById('presenceBg');
+  if(!panel||!bg)return;
+  const open=panel.style.display==='none'||!panel.style.display;
+  panel.style.display=open?'block':'none';
+  bg.style.display=open?'block':'none';
+  if(open&&typeof renderPresence==='function')renderPresence();
+}
+</script>
+
+<!-- ── LIVE PRESENCE PILL ── -->
+<div id="presencePill" onclick="togglePresencePanel()" style="display:flex;align-items:center;justify-content:center;padding:.5rem .85rem 1.1rem;cursor:pointer;user-select:none">
+  <div id="presencePillInner" style="display:inline-flex;align-items:center;gap:7px;background:var(--card);border:1px solid var(--bor);border-radius:99px;padding:.3rem .85rem;transition:border-color .2s;box-shadow:0 2px 12px rgba(0,0,0,.3)" onmouseover="this.style.borderColor='rgba(249,115,22,.3)'" onmouseout="this.style.borderColor='var(--bor)'">
+    <span class="ld"></span>
+    <span id="pillCount" style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--mut)">— online</span>
+    <span style="font-family:'DM Mono',monospace;font-size:.5rem;color:var(--ash2)">· tap to see who</span>
+  </div>
+</div>
+
+<!-- ── PRESENCE SLIDE-UP PANEL ── -->
+<div id="presencePanel" style="display:none;position:fixed;bottom:0;left:50%;transform:translateX(-50%);z-index:800;width:min(380px,100vw);background:var(--card);border:1px solid var(--bor);border-top-left-radius:16px;border-top-right-radius:16px;box-shadow:0 -8px 48px rgba(0,0,0,.55);padding:1rem 1.15rem 1.8rem">
+  <!-- Drag handle -->
+  <div style="width:36px;height:3px;background:var(--bor);border-radius:99px;margin:0 auto .9rem"></div>
+  <!-- Header -->
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:.9rem">
+    <div style="display:flex;align-items:center;gap:7px">
+      <span class="ld"></span>
+      <span style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:.72rem;letter-spacing:.07em;color:var(--txt)">LIVE PRESENCE</span>
+      <span id="todayCount" style="font-family:'DM Mono',monospace;font-size:.52rem;color:var(--mut)"></span>
+    </div>
+    <button onclick="togglePresencePanel()" style="background:none;border:none;color:var(--mut);font-size:.85rem;cursor:pointer;padding:0 2px;line-height:1">✕</button>
+  </div>
+  <!-- Online now -->
+  <div style="font-family:'DM Mono',monospace;font-size:.46rem;color:var(--mut);letter-spacing:.1em;margin-bottom:.42rem;text-transform:uppercase">Online Now</div>
+  <div id="onlineList" style="display:flex;flex-wrap:wrap;gap:.32rem;min-height:22px;align-items:center;margin-bottom:.8rem">
+    <span style="font-family:'DM Mono',monospace;font-size:.55rem;color:var(--ash2)">Loading…</span>
+  </div>
+  <!-- Stats -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:.45rem;margin-bottom:.8rem">
+    <div style="background:var(--sur);border:1px solid var(--bor);border-radius:8px;padding:.5rem .75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.44rem;color:var(--mut);letter-spacing:.1em;margin-bottom:.18rem">TODAY</div>
+      <div id="todayNum" style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:1.1rem;color:var(--acc)">—</div>
+    </div>
+    <div style="background:var(--sur);border:1px solid var(--bor);border-radius:8px;padding:.5rem .75rem">
+      <div style="font-family:'DM Mono',monospace;font-size:.44rem;color:var(--mut);letter-spacing:.1em;margin-bottom:.18rem">ALL TIME</div>
+      <div id="allTimeNum" style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:1.1rem;color:var(--gld)">—</div>
+    </div>
+  </div>
+  <!-- Top visitors -->
+  <div style="font-family:'DM Mono',monospace;font-size:.46rem;color:var(--mut);letter-spacing:.1em;margin-bottom:.4rem;text-transform:uppercase">Top Visitors</div>
+  <div id="topVisitors" style="display:flex;flex-direction:column;gap:.3rem;margin-bottom:.85rem">
+    <span style="font-family:'DM Mono',monospace;font-size:.55rem;color:var(--ash2)">No data yet</span>
+  </div>
+  <!-- Inline check-in (no popup) -->
+  <div id="checkinArea">
+    <div style="font-family:'DM Mono',monospace;font-size:.46rem;color:var(--mut);letter-spacing:.1em;margin-bottom:.4rem;text-transform:uppercase">Check In</div>
+    <div style="display:flex;gap:.5rem;align-items:center">
+      <input id="presenceInput" type="text" maxlength="24" placeholder="Your name / handle…"
+        style="flex:1;background:var(--sur);border:1px solid var(--bor);border-radius:6px;padding:.45rem .75rem;font-family:'DM Mono',monospace;font-size:.68rem;color:var(--txt);outline:none;transition:border-color .2s"
+        onfocus="this.style.borderColor='var(--acc)'" onblur="this.style.borderColor='var(--bor)'"
+        onkeydown="if(event.key==='Enter')presenceCheckIn()">
+      <button onclick="presenceCheckIn()" style="font-family:'Chakra Petch',sans-serif;font-size:.6rem;font-weight:700;letter-spacing:.04em;background:var(--acc);color:#141210;border:none;border-radius:6px;padding:.45rem .85rem;cursor:pointer;white-space:nowrap;transition:opacity .2s" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">JOIN →</button>
+    </div>
+    <div id="checkinStatus" style="font-family:'DM Mono',monospace;font-size:.52rem;color:var(--mut);margin-top:.35rem;min-height:.8rem"></div>
+  </div>
+</div>
+<div id="presenceBg" onclick="togglePresencePanel()" style="display:none;position:fixed;inset:0;z-index:799;background:rgba(0,0,0,.45)"></div>
+
+<script>
+// ── LIVE PRESENCE — Supabase backend ──
+(function(){
+  // ─── Supabase config — replace with your project URL + anon key ───
+  const SB_URL = 'https://buzkdndnenirmptfimcd.supabase.co';
+  const SB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImJ1emtkbmRuZW5pcm1wdGZpbWNkIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzQ3MTYzNDQsImV4cCI6MjA5MDI5MjM0NH0.mgae38tIrQyB3yyLeyZ1-nP298wKqU-Tq89f7Gn7BQ0';
+  // ─────────────────────────────────────────────────────────────────
+
+  const PRESENCE_TTL_S = 300; // 5 min in seconds
+  const REFRESH_MS     = 25000;
+  const TODAY          = () => new Date().toISOString().slice(0,10);
+
+  let myId   = localStorage.getItem('presence_id');
+  let myName = localStorage.getItem('presence_name') || null;
+  if(!myId){ myId = 'u' + Math.random().toString(36).slice(2,10); localStorage.setItem('presence_id', myId); }
+
+  const useSupa = SB_URL !== 'https://YOUR_PROJECT.supabase.co';
+
+  // ── Supabase REST helpers ──
+  async function sbSelect(table, filter='') {
+    if(!useSupa) return null;
+    try {
+      const r = await fetch(`${SB_URL}/rest/v1/${table}?${filter}`, {
+        headers:{ 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json' }
+      });
+      return r.ok ? r.json() : null;
+    } catch(e){ return null; }
+  }
+  async function sbUpsert(table, data) {
+    if(!useSupa) return;
+    try {
+      await fetch(`${SB_URL}/rest/v1/${table}`, {
+        method: 'POST',
+        headers:{ 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY,
+                  'Content-Type': 'application/json', 'Prefer': 'resolution=merge-duplicates' },
+        body: JSON.stringify(data)
+      });
+    } catch(e){}
+  }
+  async function sbRpc(fn, params) {
+    if(!useSupa) return null;
+    try {
+      const r = await fetch(`${SB_URL}/rest/v1/rpc/${fn}`, {
+        method:'POST',
+        headers:{ 'apikey': SB_KEY, 'Authorization': 'Bearer '+SB_KEY, 'Content-Type': 'application/json' },
+        body: JSON.stringify(params)
+      });
+      return r.ok ? r.json() : null;
+    } catch(e){ return null; }
+  }
+
+  // ── Fallback: window.storage (artifact store) ──
+  async function stGet(key){ try{ const r=await window.storage.get(key,true); return r?JSON.parse(r.value):null; }catch(e){return null;} }
+  async function stSet(key,val){ try{ await window.storage.set(key,JSON.stringify(val),true); }catch(e){} }
+  async function stList(prefix){ try{ const r=await window.storage.list(prefix,true); return r?.keys||[]; }catch(e){return[];} }
+
+  // ── Heartbeat — update my presence record ──
+  async function heartbeat() {
+    if(!myName) return;
+    const now = new Date().toISOString();
+    if(useSupa) {
+      await sbUpsert('presence', { id: myId, name: myName, last_seen: now });
+      await sbUpsert('visits', { user_id: myId, name: myName, date: TODAY() });
+    } else {
+      await stSet('presence:'+myId, { id:myId, name:myName, ts: Date.now() });
+      const td = await stGet('today:'+TODAY()) || { date: TODAY(), visitors: [] };
+      if(!td.visitors.includes(myId)){ td.visitors.push(myId); await stSet('today:'+TODAY(), td); }
+      const vc = await stGet('vc:'+myId) || { name:myName, id:myId, count:0 };
+      vc.count++; vc.name = myName; await stSet('vc:'+myId, vc);
+    }
+  }
+
+  // ── Render presence panel ──
+  async function renderPresence() {
+    let onlineUsers = [], todayN = 0, allTime = 0, topList = [];
+    const cutoff = new Date(Date.now() - PRESENCE_TTL_S*1000).toISOString();
+
+    if(useSupa) {
+      // Online now
+      const online = await sbSelect('presence', `last_seen=gte.${cutoff}&select=id,name,last_seen`);
+      if(online) onlineUsers = online;
+      // Today count
+      const todayR = await sbSelect('visits', `date=eq.${TODAY()}&select=user_id`);
+      todayN = todayR ? [...new Set(todayR.map(r=>r.user_id))].length : 0;
+      // All time + top
+      const allR = await sbSelect('visits', 'select=user_id,name&order=user_id');
+      if(allR){
+        const byUser = {};
+        allR.forEach(r=>{ if(!byUser[r.user_id]) byUser[r.user_id]={name:r.name,count:0}; byUser[r.user_id].count++; });
+        topList = Object.values(byUser).sort((a,b)=>b.count-a.count);
+        allTime = allR.length;
+      }
+    } else {
+      // Fallback: window.storage
+      const keys = await stList('presence:');
+      const now = Date.now();
+      for(const k of keys){
+        const rec = await stGet(k);
+        if(rec && (now - rec.ts) < PRESENCE_TTL_S*1000) onlineUsers.push(rec);
+      }
+      const td = await stGet('today:'+TODAY());
+      todayN = td ? td.visitors.length : 0;
+      const vcKeys = await stList('vc:');
+      for(const k of vcKeys){
+        const rec = await stGet(k);
+        if(rec){ topList.push(rec); allTime += rec.count; }
+      }
+      topList.sort((a,b)=>b.count-a.count);
+    }
+
+    // Pill
+    const pc = document.getElementById('pillCount');
+    if(pc) pc.textContent = onlineUsers.length > 0 ? onlineUsers.length+' online now' : '0 online';
+
+    // Online list
+    const ol = document.getElementById('onlineList');
+    if(ol) ol.innerHTML = onlineUsers.length === 0
+      ? '<span style="font-family:\'DM Mono\',monospace;font-size:.55rem;color:var(--ash2)">No one online — be first!</span>'
+      : onlineUsers.map(u => `<span style="display:inline-flex;align-items:center;gap:5px;background:var(--sur);border:1px solid var(--bor);border-radius:99px;padding:.2rem .6rem;font-family:'DM Mono',monospace;font-size:.56rem;color:var(--txt)"><span style="width:5px;height:5px;border-radius:50%;background:var(--grn);box-shadow:0 0 4px var(--grn);flex-shrink:0"></span>${escH(u.name)}</span>`).join('');
+
+    // Stats
+    const tn = document.getElementById('todayNum'); if(tn) tn.textContent = todayN || '—';
+    const at = document.getElementById('allTimeNum'); if(at) at.textContent = allTime || '—';
+    const tc = document.getElementById('todayCount'); if(tc) tc.textContent = todayN > 0 ? '· '+todayN+' today' : '';
+
+    // Top visitors
+    const tv = document.getElementById('topVisitors');
+    if(tv) {
+      const medals = ['🥇','🥈','🥉'];
+      tv.innerHTML = topList.length === 0
+        ? '<span style="font-family:\'DM Mono\',monospace;font-size:.55rem;color:var(--ash2)">No visits logged yet</span>'
+        : topList.slice(0,5).map((u,i) =>
+            `<div style="display:flex;align-items:center;justify-content:space-between;padding:.18rem 0">
+              <span style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--txt)">${medals[i]||'·'} ${escH(u.name)}</span>
+              <span style="font-family:'DM Mono',monospace;font-size:.52rem;color:var(--acc)">${u.count} visit${u.count!==1?'s':''}</span>
+            </div>`
+          ).join('');
+    }
+
+    // Update check-in area based on whether user is already named
+    const ca = document.getElementById('checkinArea');
+    if(ca && myName){
+      ca.innerHTML = `<div style="font-family:'DM Mono',monospace;font-size:.56rem;color:var(--grn)">&#9679; Checked in as <b style="color:var(--txt)">${escH(myName)}</b> <button onclick="presenceChangeName()" style="background:none;border:none;color:var(--mut);font-size:.52rem;cursor:pointer;text-decoration:underline;padding:0;margin-left:4px">change</button></div>`;
+    }
+  }
+
+  function escH(s){ const d=document.createElement('div');d.textContent=s;return d.innerHTML; }
+
+  // ── Panel toggle ──
+  window.togglePresencePanel = function(){
+    const panel = document.getElementById('presencePanel');
+    const bg    = document.getElementById('presenceBg');
+    const open  = panel.style.display==='none' || !panel.style.display;
+    panel.style.display = open ? 'block' : 'none';
+    bg.style.display    = open ? 'block' : 'none';
+    if(open) renderPresence();
+  };
+
+  // ── Inline check-in (no popup) ──
+  window.presenceCheckIn = async function(){
+    const inp = document.getElementById('presenceInput');
+    const raw = (inp?.value||'').trim();
+    const status = document.getElementById('checkinStatus');
+    if(!raw){ if(status) status.textContent = 'Enter a name first'; return; }
+    myName = raw.slice(0,24);
+    localStorage.setItem('presence_name', myName);
+    if(status){ status.style.color='var(--grn)'; status.textContent = 'Checking in…'; }
+    await heartbeat();
+    await renderPresence();
+    if(status){ status.textContent = ''; }
+  };
+
+  window.presenceChangeName = function(){
+    myName = null;
+    localStorage.removeItem('presence_name');
+    const ca = document.getElementById('checkinArea');
+    if(ca) ca.innerHTML = `
+      <div style="font-family:'DM Mono',monospace;font-size:.46rem;color:var(--mut);letter-spacing:.1em;margin-bottom:.4rem;text-transform:uppercase">Check In</div>
+      <div style="display:flex;gap:.5rem;align-items:center">
+        <input id="presenceInput" type="text" maxlength="24" placeholder="Your name / handle…"
+          style="flex:1;background:var(--sur);border:1px solid var(--bor);border-radius:6px;padding:.45rem .75rem;font-family:'DM Mono',monospace;font-size:.68rem;color:var(--txt);outline:none;transition:border-color .2s"
+          onfocus="this.style.borderColor='var(--acc)'" onblur="this.style.borderColor='var(--bor)'"
+          onkeydown="if(event.key==='Enter')presenceCheckIn()">
+        <button onclick="presenceCheckIn()" style="font-family:'Chakra Petch',sans-serif;font-size:.6rem;font-weight:700;letter-spacing:.04em;background:var(--acc);color:#141210;border:none;border-radius:6px;padding:.45rem .85rem;cursor:pointer;white-space:nowrap" onmouseover="this.style.opacity='.85'" onmouseout="this.style.opacity='1'">JOIN →</button>
+      </div>
+      <div id="checkinStatus" style="font-family:'DM Mono',monospace;font-size:.52rem;color:var(--mut);margin-top:.35rem;min-height:.8rem"></div>`;
+  };
+
+  // ── Init — silent background refresh, no popup ever ──
+  async function init(){
+    // Silent heartbeat if already named
+    if(myName) await heartbeat();
+    // Update pill count silently
+    renderPresence();
+    setInterval(async()=>{ if(myName) await heartbeat(); renderPresence(); }, REFRESH_MS);
+  }
+
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded', init);
+  else init();
+})();
 </script>
 
 <!-- ── GLOBAL FOOTER ── -->
