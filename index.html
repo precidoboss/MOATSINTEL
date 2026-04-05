@@ -1635,7 +1635,7 @@ const DSC_PAIR = 'https://api.dexscreener.com/latest/dex/pairs/avalanche/';
 
 const MOATS = {
   '0xcf65744c955a292d11de2a4184e9fabedbfc7b40':{name:'HEFE Moat',         short:'HEFE',  ticker:'$hefe',    emoji:'🏔️',color:'#f97316',tokenAddr:'0x18E3605B13F10016901eAC609b9E188CF7c18973',  pairAddr:'0xc4fa66b4839af7379a4fcbe5dd048b18fe99a2ac', altPairAddr:'0xe11e871d312cc9bae9eb24c7bdc2031f8453bf44', lfjPairAddr:'0xe11e871d312cc9bae9eb24c7bdc2031f8453bf44', url:'https://moats.app/moat/0xcf65744c955a292d11de2a4184e9fabedbfc7b40',   logo:'Hefelogo-new.png',              knownSupply:690420000, pharaohPool:true, dexOverride:'pharaoh', odosOnly:true, twitter:'AvaxHefe'},
-  '0x501f6e7bec3db63d8dacbc9fa0ce42d5d2329d53':{name:'hCASH LP Moat',     short:'hCASH', ticker:'$hcash',   emoji:'💧', color:'#d4a843',tokenAddr:'0x8f961980518bc9ab302948de7948580666dc35d9',  pairAddr:'0x8f961980518bc9ab302948de7948580666dc35d9',  url:'https://moats.app/moat/0x501f6e7bec3db63d8dacbc9fa0ce42d5d2329d53',   logo:'hashcashclub.png',   supplyType:'dynamic',knownSupply:21000000000,note:'LP token moat — add AVAX+hCASH liquidity on Pharaoh, then stake LP here',lpOnly:false,lpUrl:'https://phar.gg', twitter:'clubhashcash'},
+  '0x501f6e7bec3db63d8dacbc9fa0ce42d5d2329d53':{name:'hCASH LP Moat',     short:'hCASH', ticker:'$hcash',   emoji:'💧', color:'#d4a843',tokenAddr:'0x8f961980518bc9ab302948de7948580666dc35d9',  pairAddr:'0x8f961980518bc9ab302948de7948580666dc35d9',  url:'https://moats.app/moat/0x501f6e7bec3db63d8dacbc9fa0ce42d5d2329d53',   logo:'hashcashclub.png',   supplyType:'dynamic',knownSupply:0,isLpMoat:true,note:'LP token moat — add AVAX+hCASH liquidity on Pharaoh, then stake LP here',lpOnly:false,lpUrl:'https://phar.gg', twitter:'clubhashcash'},
   '0x020c73b55d139d5e259bad89b126f2a446c22ac6':{name:'FREAK Anon Moat',   short:'FREAK', ticker:'$freak',   emoji:'👾', color:'#8c8074',tokenAddr:'0x201d04f88bc9b3bdacdf0519a95e117f25062d38',  pairAddr:'0x0e13283315fd3d996b22ef40f54c38f24c7f4ee0', altPairAddr:'0x90c2ea98d6389cc4eb05ec635ee82c493b2dfaf2', dexOverride:'pharaoh', pharaohPool:true, odosOnly:true, twitter:'LucidThingsNFT', url:'https://moats.app/moat/0x020c73b55d139d5e259bad89b126f2a446c22ac6',   logo:'FREAK_Anon.png',                knownSupply:1000000000},
   '0x7e1f28c9622aa68001fe0b200f5e5f93f6b35cc9':{name:'Balln Chikn Moat', short:'BALLN', ticker:'$balln',   emoji:'🏀', color:'#f43f5e',tokenAddr:'0x4Afc7838167b77530278483c3d8c1fFe698a912E',  pairAddr:'0xa8f87e026481cf03dc9a68570584a664186b41c7', url:'https://moats.app/moat/0x7e1f28c9622aa68001fe0b200f5e5f93f6b35cc9',    logo:'balln-token.jpg',               knownSupply:100000, twitter:'BallnToken3'},
   '0x464b2817f16f6117602ad05bae446c2fc5ba6fb7':{name:'Supercycle Moat',   short:'SUPER', ticker:'$super',   emoji:'🌀', color:'#818cf8',tokenAddr:'0xCA2e0f72653337d05B1ABceBEA5718A4A3E57a0b',  pairAddr:'0x017c5608a8ab29ab23093726cf7c64e5ef88e191', url:'https://moats.app/moat/0x464b2817f16f6117602ad05bae446c2fc5ba6fb7',    logo:'supercycle.jpg',                knownSupply:10000000000, twitter:'supercyclereal_'},
@@ -3176,6 +3176,47 @@ function renderEvItemsInline(evs, tokenMap, cgCache){
 
 // ── TOKEN PRICE (DexScreener) ──
 // DexScreener public CORS-friendly API — two strategies: direct pair, then token search fallback
+// ── LIVE AVAX PRICE FROM COINGECKO ──
+// Fetches the real AVAX/USD price from CoinGecko API and caches it.
+// Used in hCASH LP investment calculator for WAVAX amount estimation.
+let _avaxPriceFetchedAt = 0;
+async function fetchAvaxPriceFromCoinGecko() {
+  // Return cached if fresh (< 2 min)
+  const cached = priceCache['avax'];
+  if (cached?.price > 0 && (Date.now() - _avaxPriceFetchedAt) < 120000) return cached.price;
+  try {
+    const r = await fetch(
+      'https://api.coingecko.com/api/v3/simple/price?ids=avalanche-2&vs_currencies=usd',
+      { headers: { 'Accept': 'application/json' } }
+    ).then(x => x.json());
+    const price = Number(r?.['avalanche-2']?.usd || 0);
+    if (price > 0) {
+      priceCache['avax'] = { price, ch24: 0, liq: 0 };
+      // Also cache under WAVAX contract addr
+      priceCache['0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7'] = { price, ch24: 0, liq: 0 };
+      _avaxPriceFetchedAt = Date.now();
+      console.log('[CoinGecko] AVAX price:', price);
+      return price;
+    }
+  } catch(e) {
+    console.warn('[CoinGecko] AVAX price fetch failed:', e.message);
+  }
+  // Fallback: try DexScreener WAVAX/USDC pair
+  try {
+    const r2 = await fetch('https://api.dexscreener.com/latest/dex/pairs/avalanche/0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e').then(x=>x.json());
+    const p = (r2.pairs||[])[0];
+    const price = Number(p?.priceNative ? 1/Number(p.priceNative) : p?.priceUsd || 0);
+    if (price > 0) {
+      priceCache['avax'] = { price, ch24: 0, liq: 0 };
+      priceCache['0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7'] = { price, ch24: 0, liq: 0 };
+      _avaxPriceFetchedAt = Date.now();
+      return price;
+    }
+  } catch(e) {}
+  // Last resort fallback
+  return priceCache['avax']?.price || 0;
+}
+
 async function fetchPairData(meta) {
   if (!meta.pairAddr && !meta.tokenAddr && !meta.geckoPoolAddr) return null;
   const rawPair = meta.pairAddr ? (meta.pairAddr.length > 42 ? meta.pairAddr.slice(0,42) : meta.pairAddr).toLowerCase() : null;
@@ -4661,6 +4702,11 @@ async function runAllocatorCalc() {
     return;
   }
 
+  // Fetch live AVAX price from CoinGecko before calculating (needed for hCASH split)
+  await fetchAvaxPriceFromCoinGecko();
+  // Ensure hCASH LP supply is fresh before calculating LP moat points
+  await fetchHcashLpSupply();
+
   // Fetch all prices fresh
   const priceJobs = sel.map(addr => {
     const meta = MOATS[addr];
@@ -4694,16 +4740,14 @@ async function runAllocatorCalc() {
     let pts = 0, ptsCalibrated = false, ptsMethod = '';
     if (price > 0 && tokens > 0) {
       const knownSup = supplyData2?.totalSupply || MOATS[addr]?.knownSupply || 0;
-      if (knownSup > 0 && m.totalPoints > 0) {
-        // Supply share model: yourPts = (tokens/totalSupply) × moatTotalPts × (yourMult/avgMult)
-        const bwc=m.burnCount||0, lwc=m.lockCount||0, swc=m.stakeCount||0, totc=m.walletCount||1;
-        const avgMult = (bwc*10 + lwc*3.5 + swc*1) / totc || 1;
-        pts = (tokens/knownSup) * m.totalPoints * (mult/avgMult);
-        ptsCalibrated = true; ptsMethod = 'supply share';
+      // ── Verified formula: sqrt(balance × mult × K), K = 1B / totalSupply ──
+      if (knownSup > 0) {
+        pts = coreMoatPoints(tokens, mult, knownSup, 0);
+        ptsCalibrated = true; ptsMethod = 'verified sqrt';
       } else {
         const ppt = estPtsPerToken(addr);
-        if (ppt) { pts = tokens*ppt*mult; ptsCalibrated=true; ptsMethod='ppt calibrated'; }
-        else { pts = tokens*mult; ptsMethod='raw'; }
+        if (ppt) { pts = tokens * ppt * mult; ptsCalibrated = true; ptsMethod = 'ppt'; }
+        else { pts = Math.sqrt(tokens * mult); ptsMethod = 'sqrt raw'; }
       }
     }
     const estRank = m.sorted.length ? m.sorted.findIndex(w=>w.points<pts)+1||m.walletCount+1 : 1;
@@ -4766,15 +4810,19 @@ async function runAllocatorCalc() {
     ${moatResults.map(r => {
       const isHcash = r.addr.toLowerCase() === '0x501f6e7bec3db63d8dacbc9fa0ce42d5d2329d53';
       // hCASH LP split: budget is split 50/50 — half buys hCASH, half goes as WAVAX for LP
+      const _liveAvaxPrice = priceCache['avax']?.price || priceCache['0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7']?.price || 0;
       const hcashSplit = isHcash && r.usd > 0 ? {
         hcashUsd: r.usd / 2,
         wavaxUsd: r.usd / 2,
         // hCASH tokens = half the budget / hCASH price
         hcashTokens: r.price > 0 ? (r.usd / 2) / r.price : 0,
-        // WAVAX needed = roughly same USD value paired with hCASH
-        wavaxAvax: priceCache['0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7']?.price > 0
-          ? (r.usd / 2) / priceCache['0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7'].price
-          : (r.usd / 2) / 25, // fallback ~$25/AVAX
+        // WAVAX needed = roughly same USD value paired with hCASH — uses LIVE CoinGecko price
+        wavaxAvax: _liveAvaxPrice > 0
+          ? (r.usd / 2) / _liveAvaxPrice
+          : (priceCache['0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7']?.price > 0
+              ? (r.usd / 2) / priceCache['0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7'].price
+              : null), // null = fetching
+        avaxPriceSource: _liveAvaxPrice > 0 ? '@ $' + fmtPrice(_liveAvaxPrice) + '/AVAX (CoinGecko live)' : '⏳ Fetching AVAX price…',
       } : null;
       // Points calc for hCASH: based on LP token amount not raw token amount
       const hcashPtsNote = isHcash ? '(LP token points — stake LP after adding liquidity on Pharaoh)' : r.ptsMethod;
@@ -4801,12 +4849,13 @@ async function runAllocatorCalc() {
             <div style="font-family:'DM Mono',monospace;font-size:.5rem;color:var(--mut)">≈ ${hcashSplit.hcashUsd.toFixed(0)}</div>
           </div>
           <div style="background:var(--card);border-radius:7px;padding:.5rem;text-align:center">
-            <div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:.9rem;color:var(--acc)">${hcashSplit.wavaxAvax.toFixed(4)}</div>
+            <div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:.9rem;color:var(--acc)">${hcashSplit.wavaxAvax !== null ? hcashSplit.wavaxAvax.toFixed(4) : '…'}</div>
             <div style="font-family:'DM Mono',monospace;font-size:.52rem;color:var(--txt);margin-top:1px">WAVAX for LP</div>
-            <div style="font-family:'DM Mono',monospace;font-size:.5rem;color:var(--mut)">≈ ${hcashSplit.wavaxUsd.toFixed(0)}</div>
+            <div style="font-family:'DM Mono',monospace;font-size:.5rem;color:var(--mut)">≈ $${hcashSplit.wavaxUsd.toFixed(0)}</div>
+            <div style="font-family:'DM Mono',monospace;font-size:.46rem;color:var(--grn);margin-top:1px">${hcashSplit.avaxPriceSource}</div>
           </div>
         </div>
-        <div style="font-family:'DM Mono',monospace;font-size:.55rem;color:var(--mut);line-height:1.5">① Buy ${f2(hcashSplit.hcashTokens)} hCASH + ${hcashSplit.wavaxAvax.toFixed(4)} WAVAX → ② Add both as LP on Pharaoh → ③ Stake LP tokens in hCASH Moat</div>
+        <div style="font-family:'DM Mono',monospace;font-size:.55rem;color:var(--mut);line-height:1.5">① Buy ${f2(hcashSplit.hcashTokens)} hCASH + ${hcashSplit.wavaxAvax !== null ? hcashSplit.wavaxAvax.toFixed(4) : '…'} WAVAX → ② Add both as LP on Pharaoh → ③ Stake LP tokens in hCASH Moat</div>
       </div>` : ''}
       <div class="res-grid">
         <div class="res-cell">
@@ -4906,7 +4955,8 @@ async function runAutoAgent() {
     const ecoShare = totPts ? m.totalPoints/totPts : 0;
     const liquidity = px?.liq||0;
     const priceAvail = px?.price>0;
-    const supply = getSupply(addr) || {totalSupply:meta.knownSupply||0};
+    // For LP moats: use on-chain supply (knownSupply=0 for hCASH LP)
+    const supply = getSupply(addr) || {totalSupply: meta.isLpMoat ? 0 : (meta.knownSupply||0)};
 
     // Scoring criteria
     let score = 0;
@@ -4977,13 +5027,13 @@ async function runAutoAgent() {
     const multMap = {stake:1,lock90:lockM(90),lock180:lockM(180),lock365:lockM(365),lock730:5,burn:10};
     const mult = multMap[strategy]||1;
     const tokens = usd/c.px.price;
-    const supply = c.meta.knownSupply||getSupply(c.addr)?.totalSupply||0;
+    // For LP moats: use on-chain supply only (knownSupply=0 intentionally)
+    const supply = (c.meta.isLpMoat ? 0 : (c.meta.knownSupply||0)) || getSupply(c.addr)?.totalSupply || 0;
     let pts = 0;
-    if (supply>0 && c.m.totalPoints>0) {
-      const bwc=c.m.burnCount||0,lwc=c.m.lockCount||0,swc=c.m.stakeCount||0,totc=c.m.walletCount||1;
-      const avgMult=(bwc*10+lwc*3.5+swc*1)/totc||1;
-      pts=(tokens/supply)*c.m.totalPoints*(mult/avgMult);
-    } else pts=tokens*mult;
+    // ── Verified formula: sqrt(balance × mult × K), K = 1B / totalSupply ──
+    if (supply > 0) {
+      pts = coreMoatPoints(tokens, mult, supply, 0);
+    } else pts = Math.sqrt(tokens * mult);
     grandPts+=pts;
     const estRank=c.m.sorted.findIndex(w=>w.points<pts)+1||c.m.walletCount+1;
     const estShare=c.m.totalPoints?(pts/(c.m.totalPoints+pts)*100).toFixed(3):'100';
@@ -5226,6 +5276,57 @@ async function fetchAllSupplies() {
   uncached.forEach((addr, i) => setTimeout(() => fetchTokenSupply(addr), i * 300));
 }
 
+// ── HCASH LP SUPPLY — fetch on-chain via eth_call, NOT Snowtrace ──
+// The LP token total supply is dynamic and tiny (fractions of an LP token).
+// Snowtrace tokensupply returns the raw integer without applying decimals correctly
+// for LP tokens, so we call totalSupply() directly on the RPC.
+const HCASH_LP_TOKEN_ADDR = '0x8f961980518bc9ab302948de7948580666dc35d9';
+let _hcashLpSupplyFetchedAt = 0;
+
+async function fetchHcashLpSupply() {
+  const key = HCASH_LP_TOKEN_ADDR.toLowerCase();
+  // Refresh if stale (> 5 min)
+  if (supplyCache[key]?.source === 'onchain_rpc' &&
+      (Date.now() - _hcashLpSupplyFetchedAt) < 300000) {
+    return supplyCache[key];
+  }
+  const RPC = 'https://api.avax.network/ext/bc/C/rpc';
+  try {
+    const res = await fetch(RPC, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        jsonrpc: '2.0', id: 1,
+        method: 'eth_call',
+        params: [{ to: HCASH_LP_TOKEN_ADDR, data: '0x18160ddd' }, 'latest']
+      })
+    }).then(r => r.json());
+
+    if (res?.result && res.result !== '0x' && res.result !== '0x0') {
+      const raw = BigInt(res.result);
+      const totalSupply = Number(raw) / 1e18; // LP tokens always 18 decimals
+      if (totalSupply > 0) {
+        const obj = {
+          totalSupply,
+          decimals: 18,
+          name: 'WAVAX/hCASH LP',
+          symbol: 'WAVAX/hCASH-LP',
+          tokenAddr: key,
+          fetchedAt: Date.now(),
+          source: 'onchain_rpc'
+        };
+        supplyCache[key] = obj;
+        _hcashLpSupplyFetchedAt = Date.now();
+        console.log('[hCASH LP] totalSupply fetched on-chain:', totalSupply);
+        return obj;
+      }
+    }
+  } catch(e) {
+    console.warn('[hCASH LP] totalSupply fetch failed:', e.message);
+  }
+  return supplyCache[key] || null;
+}
+
 // Get supply data for a moat address (looks up by moat addr → tokenAddr)
 function getSupply(moatAddr) {
   const meta = MOATS[moatAddr];
@@ -5259,11 +5360,12 @@ function onMoatSelChange(){
   const meta = MOATS[addr]  || {};
   if (ctx) ctx.style.display = 'block';
 
-  // Use knownSupply as primary source — NEVER await anything, UI stays instant
+  // Use supplyCache — for hCASH LP moat, knownSupply=0, supply comes from on-chain LP fetch
   const knownSup = meta.knownSupply || 0;
-  // Try supplyCache first (may have been enriched), fall back to knownSupply
   const cached = getSupply(addr);
-  const sup    = (cached && cached.totalSupply > 0) ? cached : (knownSup ? {totalSupply:knownSup, symbol:meta.ticker, decimals:18} : null);
+  const sup    = (cached && cached.totalSupply > 0) ? cached : (knownSup > 0 ? {totalSupply:knownSup, symbol:meta.ticker, decimals:18} : null);
+  // If LP moat and no supply yet, trigger background fetch
+  if (!sup && meta.isLpMoat) fetchHcashLpSupply().then(() => onMoatSelChange());
 
   // Estimated pts-per-token for rank preview
   const ppt = (knownSup > 0) ? (1000000 / knownSup) : (estPtsPerToken(addr) || null);
@@ -5288,6 +5390,16 @@ function onMoatSelChange(){
 
   calcPts(); // always synchronous
 }
+// ── VERIFIED MOAT POINTS FORMULA ──
+// Confirmed against $LIL moat live data (10K stake=86pts, 10K burn=272pts, 1M stake=861pts)
+// points = sqrt(balance × multiplier × K) × (1 + nftBoostPct)
+// where K = 1_000_000_000 / totalSupply
+function coreMoatPoints(balance, multiplier, totalSupply, nftBoostPct) {
+  if (!balance || !totalSupply || !multiplier) return 0;
+  const K = 1e9 / totalSupply;
+  return Math.sqrt(balance * multiplier * K) * (1 + (nftBoostPct || 0));
+}
+
 function calcPts(){
   const t    = Number(document.getElementById('cTok').value) || 0;
   const a    = document.getElementById('cAct').value;
@@ -5299,31 +5411,30 @@ function calcPts(){
   const days       = Number(document.getElementById('cDays').value) || 180;
   const multiplier = a === 'burn' ? 10 : a === 'lock' ? lockM(days) : 1;
 
-  // pts-per-token: knownSupply is the ground truth (hardcoded from moats.app docs)
-  // Formula: 1,000,000 base pts allocated per full token supply — standard Moats mechanic
-  const knownSup = meta.knownSupply || 0;
+  const knownSup = meta.knownSupply || 0; // 0 for hCASH LP moat (intentional — must use on-chain LP supply)
   const cached   = getSupply(addr);
   const supply   = (cached && cached.totalSupply > 0) ? cached.totalSupply : knownSup;
-  let ppt        = null;
-  let pptSource  = '';
-  if (supply > 0) {
-    ppt       = 1000000 / supply;
-    pptSource = 'hardcoded supply';
-  } else if (addr) {
-    ppt       = estPtsPerToken(addr);
-    pptSource = 'live estimate';
+
+  // For LP moats: if supply is 0, trigger background fetch and show loading state
+  if (supply === 0 && meta.isLpMoat) {
+    fetchHcashLpSupply().then(() => calcPts()); // re-run once supply is available
   }
 
-  const pts = ppt !== null ? t * ppt * multiplier : t * multiplier;
+  let pts = 0, ptsNote = '';
 
-  // Formula note
-  let ptsNote = '';
-  if (ppt !== null) {
-    ptsNote = fmtP(t) + ' ' + (meta.ticker||'tokens') + ' × ' + fmtPrice(ppt) + ' pts/token (base) × ' + multiplier + '×';
-    if (a === 'lock') ptsNote += ' — ' + days + 'd lock';
-    if (a === 'burn') ptsNote += ' — permanent 🔥';
+  if (supply > 0) {
+    pts = coreMoatPoints(t, multiplier, supply, 0);
+    const multLabel = a === 'burn' ? '10× burn' : a === 'lock' ? multiplier.toFixed(3) + '× (' + days + 'd)' : '1× stake';
+    ptsNote = '√(' + fmtP(t) + ' × ' + multLabel + ' × 1B/' + fmtP(supply) + ')';
+  } else if (meta.isLpMoat) {
+    pts = 0;
+    ptsNote = '⏳ Fetching LP supply on-chain…';
+  } else if (addr) {
+    pts = Math.sqrt(t * multiplier);
+    ptsNote = '√(' + fmtP(t) + ' × ' + multiplier + ') — awaiting supply';
   } else {
-    ptsNote = fmtP(t) + ' × ' + multiplier + '× — no supply data yet';
+    pts = Math.sqrt(t * multiplier);
+    ptsNote = '√(' + fmtP(t) + ' × ' + multiplier + ') — select moat for exact result';
   }
 
   document.getElementById('pRes').style.display = 'block';
@@ -5334,15 +5445,13 @@ function calcPts(){
   const ptsnRowEl = document.getElementById('rPtNoteRow');
   if (ptsnEl) { ptsnEl.textContent = ptsNote; if (ptsnRowEl) ptsnRowEl.style.display = 'flex'; }
 
-  // Live rank projection using real leaderboard data
   const rR = document.getElementById('rRankRow');
   const rS = document.getElementById('rShareRow');
   if (addr && moatMap[addr]) {
     const md     = moatMap[addr];
     const sorted = (md.sorted || []).slice();
-    // Find rank: count how many wallets have MORE pts than our projection
     let rank = sorted.filter(w => (w.points || w.totalPoints || 0) > pts).length + 1;
-    const totalWallets  = (md.walletCount || sorted.length) + 1; // +1 for this wallet
+    const totalWallets  = (md.walletCount || sorted.length) + 1;
     const newPool       = (md.totalPoints || 0) + pts;
     const share         = newPool > 0 ? (pts / newPool * 100).toFixed(3) : '100';
     const percentile    = totalWallets > 1 ? (100 - ((rank - 1) / totalWallets * 100)).toFixed(1) : '100';
@@ -5401,10 +5510,12 @@ function calcComp(){
   const el=document.getElementById('compRes'); if(!t){el.innerHTML='';return;}
   const strats=[{l:'🔒 Stake',m:1,n:'Flexible · 0.5% fee'},{l:'⏳ Lock 30d',m:lockM(30),n:lockM(30)+'×'},{l:'⏳ Lock 90d',m:lockM(90),n:lockM(90)+'×'},{l:'⏳ Lock 180d',m:lockM(180),n:lockM(180)+'×'},{l:'⏳ Lock 365d',m:lockM(365),n:lockM(365)+'×'},{l:'⏳ Lock 730d',m:5,n:'5× max lock'},{l:'🔥 Burn',m:10,n:'Permanent · 10×'}];
   const maxP=t*10,md=addr&&moatMap[addr]?moatMap[addr]:null;
+  const compAddr=document.getElementById('compMoat').value;
+  const compSupply=(()=>{if(!compAddr)return 0;const meta2=MOATS[compAddr]||{};const sup2=getSupply(compAddr);return(sup2&&sup2.totalSupply>0)?sup2.totalSupply:(meta2.isLpMoat?0:(meta2.knownSupply||0));})();
   el.innerHTML='<div style="display:grid;gap:5px;margin-top:8px">'+strats.map(s=>{
-    const compPpt=document.getElementById('compMoat').value?estPtsPerToken(document.getElementById('compMoat').value):null;
-    const pts=compPpt!==null?t*compPpt*s.m:t*s.m;
-    const bw=Math.min((pts/(compPpt!==null?t*compPpt*10:maxP)*100),100).toFixed(1);
+    const pts=compSupply>0?coreMoatPoints(t,s.m,compSupply,0):Math.sqrt(t*s.m);
+    const maxPts2=compSupply>0?coreMoatPoints(t,10,compSupply,0):Math.sqrt(t*10);
+    const bw=Math.min((maxPts2>0?pts/maxPts2*100:0),100).toFixed(1);
     const col=s.m>=10?'var(--red)':s.m>=4?'var(--gld)':s.m>=2?'var(--acc)':'var(--mut)';
     let rn='';
     if(md){const rank=md.sorted.findIndex(w=>w.points<pts)+1||md.walletCount+1,share=md.totalPoints?(pts/(md.totalPoints+pts)*100).toFixed(3):'100';rn=` · <b style="color:var(--acc)">#${rank}</b> · <b style="color:var(--grn)">${share}%</b>`;}
@@ -5503,8 +5614,14 @@ setTimeout(function(){
   populateMoatSelects();
   loadAll();
   fetchAllSupplies();
+  // Fetch hCASH LP supply on-chain immediately (dynamic LP, can't use knownSupply)
+  fetchHcashLpSupply();
+  setInterval(fetchHcashLpSupply, 300000); // refresh every 5 min
   fetchZephyrUsernames();
   populateEvMoatFilter();
+  // Fetch live AVAX price from CoinGecko on startup and every 2 min
+  fetchAvaxPriceFromCoinGecko();
+  setInterval(fetchAvaxPriceFromCoinGecko, 120000);
   // Boot URL router — parse hash and navigate on load
   setTimeout(bootRouter, 200);
   setInterval(loadAll,300000); // 5 min auto-refresh
@@ -6923,17 +7040,17 @@ async function cmUpdatePreview() {
 
   const cards = allocations.map((a,i) => {
     const px = prices[i];
-    const inUsd = cmCurrency==='AVAX' ? a.usd * (priceCache['avax']?.price||25) : a.usd;
+    const inUsd = cmCurrency==='AVAX' ? a.usd * (priceCache['avax']?.price||priceCache['0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7']?.price||0) : a.usd;
     const tokens = px?.price > 0 ? inUsd/px.price : null;
     const mult = a.method==='burn'?10:a.method==='lock'?lockM(a.lockDays||90):1;
     const m = moatMap[a.addr] || {};
-    const supply = supplyCache[a.meta.tokenAddr?.toLowerCase()]?.totalSupply || a.meta.knownSupply || 0;
+    // For LP moats: never fall back to knownSupply (it's 0 intentionally)
+    const supply = supplyCache[a.meta.tokenAddr?.toLowerCase()]?.totalSupply || (a.meta.isLpMoat ? 0 : (a.meta.knownSupply || 0));
     let estPts = 0;
-    if (tokens && supply > 0 && m.totalPoints > 0) {
-      const bwc=m.burnCount||0,lwc=m.lockCount||0,swc=m.stakeCount||0,totc=m.walletCount||1;
-      const avgM=(bwc*10+lwc*3.5+swc*1)/totc||1;
-      estPts=(tokens/supply)*m.totalPoints*(mult/avgM);
-    } else if (tokens) estPts=tokens*mult;
+    if (tokens) {
+      // ── Verified formula: sqrt(balance × mult × K), K = 1B / totalSupply ──
+      estPts = supply > 0 ? coreMoatPoints(tokens, mult, supply, 0) : Math.sqrt(tokens * mult);
+    }
     totalEstPts += estPts;
 
     const stratCol = a.method==='burn'?'var(--red)':a.method==='lock'?'var(--gld)':'var(--acc)';
@@ -8992,12 +9109,17 @@ function posCalcPoints(action, amtStr, moatAddr) {
   const days = action === 'lock' ? parseInt(document.getElementById('lockDays')?.value || 180) : 0;
   const mult = action === 'burn' ? 10 : action === 'lock' ? lockM(days) : 1;
 
-  // Use knownSupply as primary — same formula as estimator
+  // ── Verified formula: sqrt(balance × mult × K), K = 1B / totalSupply ──
+  // knownSupply is 0 for hCASH LP moat — must use on-chain LP supply
   const knownSup = meta.knownSupply || 0;
   const cached   = getSupply(moatAddr);
-  const supplyV  = (cached && cached.totalSupply > 0) ? cached.totalSupply : knownSup;
-  const ppt      = supplyV > 0 ? (1000000 / supplyV) : estPtsPerToken(moatAddr);
-  const pts      = ppt ? amt * ppt * mult : amt * mult;
+  const supply   = (cached && cached.totalSupply > 0) ? cached.totalSupply : knownSup;
+  // If LP moat and supply not yet loaded, trigger fetch and re-run
+  if (supply === 0 && meta.isLpMoat) {
+    fetchHcashLpSupply().then(() => posCalcPoints(action, amtStr, moatAddr));
+    return;
+  }
+  const pts      = supply > 0 ? coreMoatPoints(amt, mult, supply, 0) : Math.sqrt(amt * mult);
 
   const m       = moatMap[moatAddr] || {};
   const sorted  = m.sorted || [];
@@ -9010,10 +9132,12 @@ function posCalcPoints(action, amtStr, moatAddr) {
   if (previewEl) previewEl.innerHTML =
     '<span style="color:var(--acc)">' + mult + '×</span>'
     + ' · <b>~' + fmtP(pts) + ' pts</b>'
+    + (supply > 0 ? ' <span style="font-family:\'DM Mono\',monospace;font-size:.52rem;color:var(--mut)">√(' + fmtP(amt) + '×' + mult + '×K)</span>' : '')
     + ' · est. rank <span style="color:var(--gld)">#' + rank + '</span>'
     + ' (top ' + percentile + '%)'
     + ' · ' + share + '% of pool';
 }
+
 
 // ── STAKE ──
 async function posDoStake(moatAddr) {
@@ -9299,8 +9423,19 @@ function hcashCalcLockPts() {
   if (!prev) return;
   if (!amt) { prev.textContent = ''; return; }
   const mult = days>=730?5.0:days>=540?4.57:days>=365?4.0:days>=180?3.23:days>=90?2.73:days>=30?2.31:days>=7?2.11:2.04;
-  const pts  = amt * mult * days;
-  prev.textContent = `~${fmtP(pts)} pts (${mult}× for ${days}d)`;
+
+  // ── Verified formula on LP token supply ──
+  const hcashMeta2 = MOATS['0x501f6e7bec3db63d8dacbc9fa0ce42d5d2329d53'] || {};
+  const lpSupplyKey2 = (hcashMeta2.tokenAddr || '').toLowerCase();
+  const lpTotalSupply2 = supplyCache[lpSupplyKey2]?.totalSupply || 0;
+
+  const pts = lpTotalSupply2 > 0 ? coreMoatPoints(amt, mult, lpTotalSupply2, 0) : Math.sqrt(amt * mult);
+  const supplyNote2 = lpTotalSupply2 > 0 ? ' · LP supply: ' + fmtP(lpTotalSupply2) : ' · LP supply loading…';
+
+  prev.innerHTML = '<b>~' + fmtP(pts) + ' pts</b>'
+    + ' · ' + mult + '× for ' + days + 'd'
+    + supplyNote2
+    + ' <span style="font-family:\'DM Mono\',monospace;font-size:.5rem;color:var(--mut)">[LP token basis]</span>';
 }
 
 async function hcashDoLock() {
@@ -9707,9 +9842,23 @@ function hcashCalcLpPts() {
   const el   = document.getElementById('hcashStakePreview');
   if (!el) return;
   if (!amt)  { el.textContent=''; return; }
-  const days = {stake:0,lock90:90,lock180:180,lock365:365}[hcashStakeMethod||'stake']||0;
-  const mult = hcashStakeMethod==='stake' ? 1 : lockM(days);
-  el.textContent = `${mult}× multiplier · lock for ${days||'0'} days`;
+  const methodKey = hcashStakeMethod || 'stake';
+  const days = {stake:0,lock90:90,lock180:180,lock365:365}[methodKey]||0;
+  const mult = methodKey === 'stake' ? 1 : lockM(days);
+
+  // ── Verified formula on LP token supply ──
+  const hcashMetaLP = MOATS['0x501f6e7bec3db63d8dacbc9fa0ce42d5d2329d53'] || {};
+  const lpSupplyKeyLP = (hcashMetaLP.tokenAddr || '').toLowerCase();
+  const lpTotalSupplyLP = supplyCache[lpSupplyKeyLP]?.totalSupply || 0;
+
+  const ptsLP = lpTotalSupplyLP > 0 ? coreMoatPoints(amt, mult, lpTotalSupplyLP, 0) : Math.sqrt(amt * mult);
+  const supplyNoteLP = lpTotalSupplyLP > 0 ? ' · LP supply: ' + fmtP(lpTotalSupplyLP) : ' · LP supply loading…';
+
+  el.innerHTML = '<b>~' + fmtP(ptsLP) + ' pts</b>'
+    + ' · ' + mult + '× mult'
+    + (days ? ' · ' + days + 'd lock' : ' · flexible')
+    + supplyNoteLP
+    + ' <span style="font-family:\'DM Mono\',monospace;font-size:.5rem;color:var(--mut)">[LP token basis]</span>';
 }
 
 async function hcashStakeLp() {
