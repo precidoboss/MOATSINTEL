@@ -4659,9 +4659,12 @@ function ai_buildStratCompare() {
       const usd = allocState.usdc * (allocState.allocPcts[addr]||0)/100;
       const px = priceCache[addr];
       const price = px?.price || 0;
-      const tokens = price > 0 ? usd/price : 0;
+      const isHcashStratAddr = addr.toLowerCase() === HCASH_MOAT_ADDR_LC;
+      // For hCASH LP: use LP token count derived from pool TVL and LP supply
+      const tokens = price > 0 ? (isHcashStratAddr ? calcHcashLpTokens(usd, price) : usd/price) : 0;
+      const supplyStrat = getSupply(addr)?.totalSupply || (MOATS[addr]?.isLpMoat ? 0 : (MOATS[addr]?.knownSupply || 0));
       const ppt = estPtsPerToken(addr);
-      const pts = price > 0 ? (ppt ? tokens*ppt*m.mult : tokens*m.mult) : 0;
+      const pts = price > 0 ? (supplyStrat > 0 ? coreMoatPoints(tokens, m.mult, supplyStrat, 0) : (ppt ? tokens*ppt*m.mult : tokens*m.mult)) : 0;
       totalPts += pts;
     });
     return {...m, totalPts};
@@ -4734,20 +4737,22 @@ async function runAllocatorCalc() {
     const px = priceCache[addr];
     const price = px?.price || 0;
     const tokens = price > 0 ? usd/price : 0;
+    const isHcashLp = addr.toLowerCase() === HCASH_MOAT_ADDR_LC;
+    const tokensForPts = isHcashLp ? calcHcashLpTokens(usd, price) : tokens;
     // Declare m FIRST to avoid ReferenceError
     const m = moatMap[addr] || {totalPoints:0,walletCount:0,sorted:[],burnCount:0,lockCount:0,stakeCount:0};
     const supplyData2 = getSupply(addr);
     let pts = 0, ptsCalibrated = false, ptsMethod = '';
-    if (price > 0 && tokens > 0) {
+    if (price > 0 && tokensForPts > 0) {
       const knownSup = supplyData2?.totalSupply || MOATS[addr]?.knownSupply || 0;
       // ── Verified formula: sqrt(balance × mult × K), K = 1B / totalSupply ──
       if (knownSup > 0) {
-        pts = coreMoatPoints(tokens, mult, knownSup, 0);
-        ptsCalibrated = true; ptsMethod = 'verified sqrt';
+        pts = coreMoatPoints(tokensForPts, mult, knownSup, 0);
+        ptsCalibrated = true; ptsMethod = isHcashLp ? 'LP tokens (verified sqrt)' : 'verified sqrt';
       } else {
         const ppt = estPtsPerToken(addr);
-        if (ppt) { pts = tokens * ppt * mult; ptsCalibrated = true; ptsMethod = 'ppt'; }
-        else { pts = Math.sqrt(tokens * mult); ptsMethod = 'sqrt raw'; }
+        if (ppt) { pts = tokensForPts * ppt * mult; ptsCalibrated = true; ptsMethod = isHcashLp ? 'LP tokens (ppt)' : 'ppt'; }
+        else { pts = Math.sqrt(tokensForPts * mult); ptsMethod = isHcashLp ? 'LP tokens (sqrt raw)' : 'sqrt raw'; }
       }
     }
     const estRank = m.sorted.length ? m.sorted.findIndex(w=>w.points<pts)+1||m.walletCount+1 : 1;
@@ -4816,6 +4821,8 @@ async function runAllocatorCalc() {
         wavaxUsd: r.usd / 2,
         // hCASH tokens = half the budget / hCASH price
         hcashTokens: r.price > 0 ? (r.usd / 2) / r.price : 0,
+        // LP tokens = usd * lpTotalSupply / poolTVL  (correct formula)
+        lpTokens: calcHcashLpTokens(r.usd, r.price),
         // WAVAX needed = roughly same USD value paired with hCASH — uses LIVE CoinGecko price
         wavaxAvax: _liveAvaxPrice > 0
           ? (r.usd / 2) / _liveAvaxPrice
@@ -4856,12 +4863,13 @@ async function runAllocatorCalc() {
           </div>
         </div>
         <div style="font-family:'DM Mono',monospace;font-size:.55rem;color:var(--mut);line-height:1.5">① Buy ${f2(hcashSplit.hcashTokens)} hCASH + ${hcashSplit.wavaxAvax !== null ? hcashSplit.wavaxAvax.toFixed(4) : '…'} WAVAX → ② Add both as LP on Pharaoh → ③ Stake LP tokens in hCASH Moat</div>
+        ${hcashSplit.lpTokens > 0 ? `<div style="margin-top:.5rem;background:rgba(249,115,22,.07);border:1px solid rgba(249,115,22,.2);border-radius:6px;padding:.4rem .65rem;display:flex;justify-content:space-between;align-items:center"><span style="font-family:'DM Mono',monospace;font-size:.54rem;color:var(--mut)">Est. LP tokens to stake</span><span style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:.82rem;color:var(--acc)">${f2(hcashSplit.lpTokens)}</span></div>` : ''}
       </div>` : ''}
       <div class="res-grid">
         <div class="res-cell">
-          <div class="res-val">${r.price>0?(isHcash?f2(hcashSplit?.hcashTokens||0):f2(r.tokens)):'—'}</div>
-          <div class="res-lbl">${isHcash?'hCASH tokens':'Tokens to buy'}</div>
-          <div class="res-sub">${r.price>0?'@ $'+fmtPrice(r.price):'price unavail.'}</div>
+          <div class="res-val">${r.price>0?(isHcash?f2(hcashSplit?.lpTokens||0):f2(r.tokens)):'—'}</div>
+          <div class="res-lbl">${isHcash?'LP tokens to stake':'Tokens to buy'}</div>
+          <div class="res-sub">${r.price>0?(isHcash?'staked in hCASH moat':'@ $'+fmtPrice(r.price)):'price unavail.'}</div>
         </div>
         <div class="res-cell">
           <div class="res-val" style="color:var(--acc)">${r.price>0?fmtP(r.pts):'—'}</div>
@@ -5027,13 +5035,16 @@ async function runAutoAgent() {
     const multMap = {stake:1,lock90:lockM(90),lock180:lockM(180),lock365:lockM(365),lock730:5,burn:10};
     const mult = multMap[strategy]||1;
     const tokens = usd/c.px.price;
+    // For hCASH LP moat: budget is split 50/50, LP tokens ≈ (usd/2)/price
+    const isHcashLpAgent = c.addr.toLowerCase() === HCASH_MOAT_ADDR_LC;
+    const tokensForPts = isHcashLpAgent ? calcHcashLpTokens(usd, c.px.price) : tokens;
     // For LP moats: use on-chain supply only (knownSupply=0 intentionally)
     const supply = (c.meta.isLpMoat ? 0 : (c.meta.knownSupply||0)) || getSupply(c.addr)?.totalSupply || 0;
     let pts = 0;
     // ── Verified formula: sqrt(balance × mult × K), K = 1B / totalSupply ──
     if (supply > 0) {
-      pts = coreMoatPoints(tokens, mult, supply, 0);
-    } else pts = Math.sqrt(tokens * mult);
+      pts = coreMoatPoints(tokensForPts, mult, supply, 0);
+    } else pts = Math.sqrt(tokensForPts * mult);
     grandPts+=pts;
     const estRank=c.m.sorted.findIndex(w=>w.points<pts)+1||c.m.walletCount+1;
     const estShare=c.m.totalPoints?(pts/(c.m.totalPoints+pts)*100).toFixed(3):'100';
@@ -5081,8 +5092,8 @@ async function runAutoAgent() {
       </div>
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:5px;margin-bottom:.5rem">
         <div style="text-align:center;background:var(--card);border-radius:7px;padding:.45rem">
-          <div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:.8rem">${f2(r.tokens)}</div>
-          <div style="font-family:'DM Mono',monospace;font-size:.48rem;color:var(--mut);text-transform:uppercase">Tokens</div>
+          <div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:.8rem">${isHcashLpAgent ? f2(tokensForPts) : f2(r.tokens)}</div>
+          <div style="font-family:'DM Mono',monospace;font-size:.48rem;color:var(--mut);text-transform:uppercase">${isHcashLpAgent ? 'LP Tokens' : 'Tokens'}</div>
           <div style="font-family:'DM Mono',monospace;font-size:.52rem;color:var(--mut)">@ $${fmtPrice(r.c.px.price)}</div>
         </div>
         <div style="text-align:center;background:var(--card);border-radius:7px;padding:.45rem">
@@ -5354,6 +5365,34 @@ function onMoatSelChange(){
   const addr = document.getElementById('cMoatSel').value;
   const ctx  = document.getElementById('moatCtx');
   const st   = document.getElementById('moatCtxStats');
+  // Update token amount label/placeholder for LP moats
+  const tokLabel = document.querySelector('label[for="cTok"], .ig label.il');
+  const cTokInput = document.getElementById('cTok');
+  const isHcashSel = addr.toLowerCase() === '0x501f6e7bec3db63d8dacbc9fa0ce42d5d2329d53';
+  const meta2 = MOATS[addr] || {};
+  // Find the label sibling of cTok by iterating .ig containers
+  document.querySelectorAll('.ig').forEach(ig => {
+    if (ig.querySelector('#cTok')) {
+      const lbl = ig.querySelector('.il');
+      if (lbl) lbl.textContent = (meta2.isLpMoat || isHcashSel) ? 'LP Token Amount' : 'Token Amount';
+      if (cTokInput) cTokInput.placeholder = (meta2.isLpMoat || isHcashSel) ? 'LP tokens staked' : 'e.g. 100000';
+    }
+  });
+  // Show/hide LP note
+  let lpNote = document.getElementById('cTokLpNote');
+  if (meta2.isLpMoat || isHcashSel) {
+    if (!lpNote) {
+      lpNote = document.createElement('div');
+      lpNote.id = 'cTokLpNote';
+      lpNote.style.cssText = 'font-family:\'DM Mono\',monospace;font-size:.54rem;color:var(--gld);margin-bottom:6px;line-height:1.45';
+      lpNote.innerHTML = '💧 Enter <b>LP tokens</b> (not hCASH). Get LP by adding AVAX+hCASH liquidity on Pharaoh, then stake LP here.';
+      const pResEl = document.getElementById('pRes');
+      if (pResEl) pResEl.parentNode.insertBefore(lpNote, pResEl);
+    }
+    lpNote.style.display = 'block';
+  } else {
+    if (lpNote) lpNote.style.display = 'none';
+  }
   if (!addr || !moatMap[addr]) { if(ctx) ctx.style.display='none'; calcPts(); return; }
 
   const m    = moatMap[addr] || {};
@@ -5394,6 +5433,32 @@ function onMoatSelChange(){
 // Confirmed against $LIL moat live data (10K stake=86pts, 10K burn=272pts, 1M stake=861pts)
 // points = sqrt(balance × multiplier × K) × (1 + nftBoostPct)
 // where K = 1_000_000_000 / totalSupply
+// ── hCASH LP TOKEN ESTIMATOR ──
+// Given a USD budget invested into the hCASH LP Moat, estimate how many LP tokens
+// the user will receive after pairing AVAX+hCASH on Pharaoh.
+//
+// LP token price = pool TVL (liquidity USD) / LP total supply
+// LP tokens received = usd / LP token price = usd * lpTotalSupply / poolTvlUsd
+//
+// Both inputs come from data already fetched:
+//   - poolTvlUsd  = priceCache[hcashAddr].liq  (DexScreener liquidity.usd)
+//   - lpTotalSupply = getSupply(hcashAddr).totalSupply  (on-chain totalSupply())
+//
+// Falls back to (usd/2)/hCASHprice only if TVL or supply is unavailable.
+const HCASH_MOAT_ADDR_LC = '0x501f6e7bec3db63d8dacbc9fa0ce42d5d2329d53';
+function calcHcashLpTokens(usd, hcashPrice) {
+  const lpSupply = getSupply(HCASH_MOAT_ADDR_LC)?.totalSupply || 0;
+  const poolTvl  = priceCache[HCASH_MOAT_ADDR_LC]?.liq || 0;
+  if (lpSupply > 0 && poolTvl > 0) {
+    // Primary: proportional share of pool
+    return (usd / poolTvl) * lpSupply;
+  }
+  // Fallback: half the budget buys hCASH → LP ≈ hCASH tokens added
+  // (only valid when LP price ≈ hCASH price, which is generally NOT true)
+  if (hcashPrice > 0) return (usd / 2) / hcashPrice;
+  return 0;
+}
+
 function coreMoatPoints(balance, multiplier, totalSupply, nftBoostPct) {
   if (!balance || !totalSupply || !multiplier) return 0;
   const K = 1e9 / totalSupply;
@@ -5508,6 +5573,14 @@ function calcCouncil(){
 function calcComp(){
   const t=Number(document.getElementById('compT').value)||0,addr=document.getElementById('compMoat').value;
   const el=document.getElementById('compRes'); if(!t){el.innerHTML='';return;}
+  // Update label for hCASH LP moat
+  const isHcashComp = addr.toLowerCase() === '0x501f6e7bec3db63d8dacbc9fa0ce42d5d2329d53';
+  document.querySelectorAll('.ig').forEach(ig => {
+    if (ig.querySelector('#compT')) {
+      const lbl = ig.querySelector('.il');
+      if (lbl) lbl.textContent = isHcashComp ? 'LP Token Amount' : 'Token Amount';
+    }
+  });
   const strats=[{l:'🔒 Stake',m:1,n:'Flexible · 0.5% fee'},{l:'⏳ Lock 30d',m:lockM(30),n:lockM(30)+'×'},{l:'⏳ Lock 90d',m:lockM(90),n:lockM(90)+'×'},{l:'⏳ Lock 180d',m:lockM(180),n:lockM(180)+'×'},{l:'⏳ Lock 365d',m:lockM(365),n:lockM(365)+'×'},{l:'⏳ Lock 730d',m:5,n:'5× max lock'},{l:'🔥 Burn',m:10,n:'Permanent · 10×'}];
   const maxP=t*10,md=addr&&moatMap[addr]?moatMap[addr]:null;
   const compAddr=document.getElementById('compMoat').value;
@@ -7041,7 +7114,9 @@ async function cmUpdatePreview() {
   const cards = allocations.map((a,i) => {
     const px = prices[i];
     const inUsd = cmCurrency==='AVAX' ? a.usd * (priceCache['avax']?.price||priceCache['0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7']?.price||0) : a.usd;
-    const tokens = px?.price > 0 ? inUsd/px.price : null;
+    const isHcashExec = a.addr.toLowerCase() === HCASH_MOAT_ADDR_LC;
+    // For hCASH LP moat: derive LP tokens from pool TVL and LP total supply
+    const tokens = px?.price > 0 ? (isHcashExec ? calcHcashLpTokens(inUsd, px.price) : inUsd/px.price) : null;
     const mult = a.method==='burn'?10:a.method==='lock'?lockM(a.lockDays||90):1;
     const m = moatMap[a.addr] || {};
     // For LP moats: never fall back to knownSupply (it's 0 intentionally)
@@ -7070,7 +7145,7 @@ async function cmUpdatePreview() {
       </div>
       <div style="display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.35rem">
         ${px?.price?`<span style="font-family:'DM Mono',monospace;font-size:.58rem;background:var(--sur);border:1px solid var(--bor);border-radius:4px;padding:1px 6px">$${fmtPrice(px.price)} per ${a.meta.ticker}</span>`:''}
-        ${tokens?`<span style="font-family:'DM Mono',monospace;font-size:.58rem;background:var(--sur);border:1px solid var(--bor);border-radius:4px;padding:1px 6px">~${fmtP(tokens)} ${a.meta.ticker}</span>`:''}
+        ${tokens?`<span style="font-family:'DM Mono',monospace;font-size:.58rem;background:var(--sur);border:1px solid var(--bor);border-radius:4px;padding:1px 6px">~${fmtP(tokens)} ${isHcashExec ? 'LP tokens' : a.meta.ticker}</span>`:''}
         ${estPts?`<span style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--acc);background:rgba(249,115,22,.08);border:1px solid rgba(249,115,22,.2);border-radius:4px;padding:1px 6px">~${fmtP(estPts)} pts</span>`:''}
         ${px?.ch24!==0&&px?.ch24?`<span style="font-family:'DM Mono',monospace;font-size:.56rem;color:${px.ch24>=0?'var(--grn)':'var(--red)'};background:var(--sur);border:1px solid var(--bor);border-radius:4px;padding:1px 6px">${px.ch24>=0?'+':''}${px.ch24.toFixed(1)}% 24h</span>`:''}
       </div>
