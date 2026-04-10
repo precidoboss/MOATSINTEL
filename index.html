@@ -65,11 +65,20 @@ header{position:sticky;top:0;z-index:200;border-bottom:1px solid var(--bor);back
 .logo-img{width:34px;height:34px;border-radius:8px;object-fit:cover;flex-shrink:0;border:1px solid var(--bor)}
 .logo-fallback{width:34px;height:34px;border-radius:8px;background:var(--acc);display:flex;align-items:center;justify-content:center;font-size:15px;flex-shrink:0}
 .logo em{color:var(--acc);font-style:normal}
-.navtabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch}
+/* NAV BAR — always below header on its own sticky row */
+.navbar{position:sticky;top:54px;z-index:199;background:rgba(20,18,16,.97);backdrop-filter:blur(16px);border-bottom:1px solid var(--bor);padding:0 .5rem}
+.navtabs{display:flex;gap:2px;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding:.35rem 0}
 .navtabs::-webkit-scrollbar{display:none}
 .tab{padding:5px 9px;border-radius:6px;cursor:pointer;color:var(--mut);transition:all .15s;border:1px solid transparent;font-family:'DM Mono',monospace;font-size:.58rem;white-space:nowrap;user-select:none;flex-shrink:0}
 .tab:hover{color:var(--txt);background:rgba(249,115,22,.07)}
 .tab.on{color:var(--acc);background:rgba(249,115,22,.12);border-color:rgba(249,115,22,.28)}
+/* Hide navtabs from inside header on mobile; show in navbar */
+header .navtabs{display:none}
+@media(min-width:768px){
+  header .navtabs{display:flex}
+  .navtabs{padding:0}
+  .navbar{display:none}
+}
 .hdr-r{display:flex;align-items:center;gap:7px;flex-shrink:0}
 .ts{font-family:'DM Mono',monospace;font-size:.58rem;color:var(--mut);display:none}
 @media(min-width:600px){.ts{display:block}}
@@ -470,23 +479,40 @@ main{position:relative;z-index:1;padding:.8rem;max-width:1440px;margin:0 auto}
     MOATS <em>INTEL</em>
   </a>
   <nav class="navtabs">
-    <div class="tab on" data-v="overview"    onclick="nav(this)">📊 Overview</div>
-    <div class="tab"    data-v="moats"       onclick="nav(this)">⬡ Moats</div>
-    <div class="tab"    data-v="leaderboard" onclick="nav(this)">🏆 Leaders</div>
-    <div class="tab"    data-v="signals"     onclick="nav(this)">🔬 Signals</div>
-    <div class="tab"    data-v="events"      onclick="nav(this)">📡 Activity</div>
-    <div class="tab"    data-v="wallet"      onclick="nav(this)">🔎 Wallet</div>
-    <div class="tab"    data-v="invest-home" onclick="nav(this)">🧮 Invest</div>
-    <div class="tab"    data-v="guide"       onclick="nav(this)">💡 Guide</div>
-    <div class="tab"    data-v="copymoat"    onclick="nav(this)">📋 Copy Moat</div>
-    <div class="tab"    data-v="positions"   onclick="nav(this)">🏦 My Positions</div>
-    <div class="tab"    data-v="debug"       onclick="nav(this)">🛠️ Debug</div>
+    <div class="tab on" data-v="overview"    onclick="nav(this);syncNavTabs(this)">📊 Overview</div>
+    <div class="tab"    data-v="moats"       onclick="nav(this);syncNavTabs(this)">⬡ Moats</div>
+    <div class="tab"    data-v="leaderboard" onclick="nav(this);syncNavTabs(this)">🏆 Leaders</div>
+    <div class="tab"    data-v="signals"     onclick="nav(this);syncNavTabs(this)">🔬 Signals</div>
+    <div class="tab"    data-v="events"      onclick="nav(this);syncNavTabs(this)">📡 Activity</div>
+    <div class="tab"    data-v="wallet"      onclick="nav(this);syncNavTabs(this)">🔎 Wallet</div>
+    <div class="tab"    data-v="invest-home" onclick="nav(this);syncNavTabs(this)">🧮 Invest</div>
+    <div class="tab"    data-v="guide"       onclick="nav(this);syncNavTabs(this)">💡 Guide</div>
+    <div class="tab"    data-v="copymoat"    onclick="nav(this);syncNavTabs(this)">📋 Copy Moat</div>
+    <div class="tab"    data-v="positions"   onclick="nav(this);syncNavTabs(this)">🏦 My Positions</div>
+    <div class="tab"    data-v="debug"       onclick="nav(this);syncNavTabs(this)">🛠️ Debug</div>
   </nav>
   <div class="hdr-r">
     <span class="live"><span class="ld"></span><span class="ts" id="tsEl">LIVE</span></span>
     <button class="rfbtn" id="rfBtn" onclick="loadAll()">↺ Refresh</button>
   </div>
 </header>
+
+<!-- ── MOBILE NAV BAR (below header, hidden on desktop) ── -->
+<div class="navbar">
+  <nav class="navtabs" id="mobileNavTabs">
+    <div class="tab on" data-v="overview"    onclick="nav(this);syncNavTabs(this)">📊 Overview</div>
+    <div class="tab"    data-v="moats"       onclick="nav(this);syncNavTabs(this)">⬡ Moats</div>
+    <div class="tab"    data-v="leaderboard" onclick="nav(this);syncNavTabs(this)">🏆 Leaders</div>
+    <div class="tab"    data-v="signals"     onclick="nav(this);syncNavTabs(this)">🔬 Signals</div>
+    <div class="tab"    data-v="events"      onclick="nav(this);syncNavTabs(this)">📡 Activity</div>
+    <div class="tab"    data-v="wallet"      onclick="nav(this);syncNavTabs(this)">🔎 Wallet</div>
+    <div class="tab"    data-v="invest-home" onclick="nav(this);syncNavTabs(this)">🧮 Invest</div>
+    <div class="tab"    data-v="guide"       onclick="nav(this);syncNavTabs(this)">💡 Guide</div>
+    <div class="tab"    data-v="copymoat"    onclick="nav(this);syncNavTabs(this)">📋 Copy Moat</div>
+    <div class="tab"    data-v="positions"   onclick="nav(this);syncNavTabs(this)">🏦 My Positions</div>
+    <div class="tab"    data-v="debug"       onclick="nav(this);syncNavTabs(this)">🛠️ Debug</div>
+  </nav>
+</div>
 
 <main>
 
@@ -1805,6 +1831,16 @@ function nav(el, _skipRoute=false){
   // Update URL + meta (skip during boot to avoid double-push)
   if(!_skipRoute && typeof routeFromTab === 'function') routeFromTab(v);
 }
+// Keep both navbars in sync and scroll active tab into view on mobile
+function syncNavTabs(clickedEl){
+  if(!clickedEl) return;
+  const v = clickedEl.dataset.v;
+  const mobileBar = document.getElementById('mobileNavTabs');
+  if(mobileBar){
+    const twin = mobileBar.querySelector('[data-v="'+v+'"]');
+    if(twin) twin.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});
+  }
+}
 function mTab(el){
   document.querySelectorAll('.mtab').forEach(x=>x.classList.remove('on'));
   document.querySelectorAll('.mtsec').forEach(x=>x.classList.remove('on'));
@@ -2752,7 +2788,7 @@ async function renderMoatRewards(addr){
   // ── Step 2: Fetch from /events API (the only working endpoint) ──
   let apiEvs = [];
   try {
-    const pages = [0, 500, 1000]; // fetch up to 1500 events
+    const pages = [0, 500, 1000, 1500, 2000]; // fetch up to 2500 events
     const fetches = pages.map(offset =>
       fetch(API + '/events?contractAddress=' + addr + '&limit=500&offset=' + offset)
         .then(r=>r.ok?r.json():null).catch(()=>null)
@@ -2792,14 +2828,18 @@ async function renderMoatRewards(addr){
     '0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7': 18, // WAVAX
     '0x152b9d0fdc40c096757f570a51e494bd4b943e50': 8,  // BTC.b
     '0x50b7545627a5162f82a992c33b87adc75187b218': 8,  // WBTC.e
+    '0x63a72806098bd3d9520cc43356dd78afe5d386d9': 18, // AAVE.e
+    '0xd586e7f844cea2f87f50152665bcbc2c279d8d70': 18, // DAI.e
   };
+  // All moat tokens are standard 18-decimal ERC20s
+  Object.values(MOATS).forEach(m=>{ if(m.tokenAddr) TOKEN_DECIMALS[m.tokenAddr.toLowerCase()]=18; });
   let onChainEvs = [];
   try {
     const RPC = 'https://api.avax.network/ext/bc/C/rpc';
     // Collect unique txHashes from API events (claim/reward types)
     const claimTxHashes = [...new Set(
       apiRewardEvs.map(e=>e.txHash).filter(h=>h&&h.startsWith('0x'))
-    )].slice(0, 50); // cap at 50 receipts
+    )].slice(0, 100); // cap at 100 receipts
 
     // Also do a broad getLogs scan for Transfer events TO the moat contract
     // to catch any receipts we might have missed from the API
@@ -2818,7 +2858,7 @@ async function renderMoatRewards(addr){
     // (moat contract is the "from" address when it pays out rewards)
     let logScanJob = null;
     if(curBlock>0){
-      const fromBlock = '0x'+Math.max(0,curBlock-100000).toString(16);
+      const fromBlock = '0x'+Math.max(0,curBlock-200000).toString(16);
       const toBlock   = '0x'+curBlock.toString(16);
       // Transfer events where topic[1] (from) = moat contract (padded to 32 bytes)
       const paddedAddr = '0x000000000000000000000000'+addr.slice(2).toLowerCase();
@@ -3103,7 +3143,7 @@ async function renderMoatRewards(addr){
     ${allRewardEvs.length?`
     <div class="panel" style="margin-bottom:.85rem">
       <div class="ph"><div class="ptitle">💰 Reward & Claim Events</div><span style="font-family:'DM Mono',monospace;font-size:.58rem;color:var(--mut)">${allRewardEvs.length} events</span></div>
-      <div class="evf">${renderEvItemsInline(allRewardEvs.slice(0,20), REWARD_TOKENS, cgCache)}</div>
+      <div class="evf">${renderEvItemsInline(allRewardEvs.slice(0,50), REWARD_TOKENS, cgCache)}</div>
     </div>`:''}
     <div class="panel">
       <div class="ph"><div class="ptitle">Full Distribution (${pts.length} wallets)</div>${tokenLabels.length?`<span style="font-family:'DM Mono',monospace;font-size:.52rem;color:var(--grn)">💰 claimed rewards shown</span>`:''}</div>
@@ -3132,15 +3172,20 @@ async function renderMoatRewards(addr){
 function renderEvItemsInline(evs, tokenMap, cgCache){
   if(!evs.length)return'<div class="empty" style="padding:1rem">No events.</div>';
   const REWARD_TOKENS=Object.assign({
-    'usdc':'USDC','wavax':'WAVAX','avax':'AVAX','btc.b':'BTC.b',
+    'usdc':'USDC','usdt':'USDT','wavax':'WAVAX','avax':'AVAX','btc.b':'BTC.b','wbtc.e':'WBTC.e','weth.e':'WETH.e',
     '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e':'USDC',
     '0x9702230a8ea53601f5cd2dc00fdbc13d4df4a8c7':'USDT',
     '0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7':'WAVAX',
     '0x152b9d0fdc40c096757f570a51e494bd4b943e50':'BTC.b',
     '0x50b7545627a5162f82a992c33b87adc75187b218':'WBTC.e',
     '0x49d5c2bdffac6ce2bfdb6640f4f80f226bc10bab':'WETH.e',
+    '0x63a72806098bd3d9520cc43356dd78afe5d386d9':'AAVE.e',
+    '0xd586e7f844cea2f87f50152665bcbc2c279d8d70':'DAI.e',
   }, tokenMap||{});
+  // Enrich with all moat tokens + cgCache
+  Object.entries(MOATS).forEach(([,m])=>{ if(m.tokenAddr) REWARD_TOKENS[m.tokenAddr.toLowerCase()]=m.ticker; });
   const cg=cgCache||{};
+  Object.entries(cg).forEach(([addr,d])=>{ if(d.symbol) REWARD_TOKENS[addr]=d.symbol; });
   return evs.map(e=>{
     const ts=fmtTs(e.timestamp);
     const _w=(e.wallet||e.user||e.walletAddress||'').toLowerCase();
@@ -3161,8 +3206,11 @@ function renderEvItemsInline(evs, tokenMap, cgCache){
     const rkRaw=(e.rewardTokenAddr||e.rewardToken||'').toLowerCase();
     let rkLabel=REWARD_TOKENS[rkRaw]||(cg[rkRaw]?.symbol)||null;
     if(!rkLabel&&rkRaw){Object.values(MOATS).forEach(mm=>{if(mm.tokenAddr&&mm.tokenAddr.toLowerCase()===rkRaw)rkLabel=mm.ticker;});}
-    rkLabel=rkLabel||(rkRaw&&rkRaw.startsWith('0x')?shortA(rkRaw):'');
-    const amt=e.rewardAmount>0&&rkLabel?`<span style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--grn);background:rgba(109,184,122,.1);border-radius:4px;padding:1px 5px">💰 ${e.rewardAmount>=1?fmtP(e.rewardAmount):e.rewardAmount.toFixed(4)} ${rkLabel}</span>`:'';
+    // If rkRaw is already a short symbol (not 0x address), use it as-is uppercased
+    if(!rkLabel&&rkRaw&&!rkRaw.startsWith('0x')&&rkRaw.length<12) rkLabel=rkRaw.toUpperCase();
+    if(!rkLabel&&rkRaw&&rkRaw.startsWith('0x')) rkLabel=shortA(rkRaw);
+    const rAmtStr=e.rewardAmount>0?(e.rewardAmount>=1?fmtP(e.rewardAmount):e.rewardAmount.toFixed(6)):'';
+    const amt=rAmtStr?`<span style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--grn);background:rgba(109,184,122,.1);border-radius:4px;padding:1px 5px">💰 ${rAmtStr}${rkLabel?' '+rkLabel:''}</span>`:'';
     const txLink=e.txHash?`<a href="https://snowtrace.io/tx/${e.txHash}" target="_blank" style="font-family:'DM Mono',monospace;font-size:.54rem;color:var(--mut)">${shortA(e.txHash)} ↗</a>`:'';
     return `<div class="ei">
       <div style="width:6px;height:6px;border-radius:50%;background:var(--grn);margin-top:6px;flex-shrink:0"></div>
@@ -4026,7 +4074,7 @@ async function loadMoreEvents(){
     evPage++;
     const type=document.getElementById('evTypeFilter')?.value||'';
     const moat=document.getElementById('evMoatFilter')?.value||'';
-    let url=API+'/events?limit=50&page='+evPage;
+    let url=API+'/events?limit=100&page='+evPage;
     if(moat) url+='&contractAddress='+moat;
     if(type) url+='&eventType='+type;
     const r=await fetch(url).then(x=>x.json());
@@ -4157,14 +4205,33 @@ function renderEvItems(evs,id,freshIds=[]){
     let rewardChip='';
     if(e.rewardAmount>0||isReward){
       const rkRaw=(e.rewardTokenAddr||e.rewardToken||'').toLowerCase();
-      // Build full resolution map: known addrs + moat token addrs
-      const fullMap = Object.assign({}, REWARD_ADDR_MAP, REWARD_TOKENS);
-      // Add all moat tokens to the map
-      Object.values(MOATS).forEach(m=>{ if(m.tokenAddr) fullMap[m.tokenAddr.toLowerCase()]=m.ticker; });
-      const rkLabel = fullMap[rkRaw] || e.rewardToken || (e.rewardTokenAddr?shortA(e.rewardTokenAddr):'tokens');
+      // Build full resolution map: well-known addrs + all moat token addrs + global REWARD_TOKENS
+      const fullRTMap = {
+        'usdc':'USDC','usdt':'USDT','wavax':'WAVAX','avax':'AVAX','weth.e':'WETH.e','btc.b':'BTC.b','wbtc.e':'WBTC.e',
+        '0xb97ef9ef8734c71904d8002f8b6bc66dd9c48a6e':'USDC',
+        '0x9702230a8ea53601f5cd2dc00fdbc13d4df4a8c7':'USDT',
+        '0xb31f66aa3c1e785363f0875a1b74e27b85fd66c7':'WAVAX',
+        '0x49d5c2bdffac6ce2bfdb6640f4f80f226bc10bab':'WETH.e',
+        '0x152b9d0fdc40c096757f570a51e494bd4b943e50':'BTC.b',
+        '0x50b7545627a5162f82a992c33b87adc75187b218':'WBTC.e',
+        '0x63a72806098bd3d9520cc43356dd78afe5d386d9':'AAVE.e',
+        '0xd586e7f844cea2f87f50152665bcbc2c279d8d70':'DAI.e',
+      };
+      Object.entries(MOATS).forEach(([,m])=>{ if(m.tokenAddr) fullRTMap[m.tokenAddr.toLowerCase()]=m.ticker; });
+      // Also pull from any resolved cgCache
+      if(typeof cgCache!=='undefined') Object.entries(cgCache).forEach(([addr,d])=>{ if(d.symbol) fullRTMap[addr]=d.symbol; });
+      let rkLabel = fullRTMap[rkRaw];
+      // If still not found, check if it matches a moat ticker directly
+      if(!rkLabel&&rkRaw) Object.values(MOATS).forEach(m=>{ if(m.tokenAddr?.toLowerCase()===rkRaw) rkLabel=m.ticker; });
+      // If it's a known short label already (not 0x address), keep it as-is
+      if(!rkLabel&&rkRaw&&!rkRaw.startsWith('0x')) rkLabel=rkRaw.toUpperCase();
+      // Last resort: shorten address
+      if(!rkLabel&&rkRaw&&rkRaw.startsWith('0x')) rkLabel=shortA(rkRaw);
       const rAmt = e.rewardAmount>0 ? (e.rewardAmount>=1 ? fmtP(e.rewardAmount) : e.rewardAmount.toFixed(6)) : '';
-      if(rAmt) {
+      if(rAmt&&rkLabel) {
         rewardChip=`<span style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--grn);background:rgba(109,184,122,.12);border:1px solid rgba(109,184,122,.25);border-radius:4px;padding:1px 5px">💰 ${rAmt} ${rkLabel}</span>`;
+      } else if(rkLabel&&isReward) {
+        rewardChip=`<span style="font-family:'DM Mono',monospace;font-size:.6rem;color:var(--grn);background:rgba(109,184,122,.12);border:1px solid rgba(109,184,122,.25);border-radius:4px;padding:1px 5px">💰 ${rkLabel}</span>`;
       }
     }
 
