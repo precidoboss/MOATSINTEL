@@ -17,7 +17,7 @@
 <meta property="og:type"        content="website">
 <meta property="og:site_name"   content="MOATS INTEL">
 <meta property="og:title"       id="og-title"       content="MOATS INTEL — Avalanche DeFi Intelligence">
-<meta property="og:description" id="og-desc"        content="Track all 11 Moats live — staked, locked & burned positions, council scores, token prices, signals and more.">
+<meta property="og:description" id="og-desc"        content="Track all 18 Moats live — staked, locked & burned positions, council scores, token prices, signals and more.">
 <meta property="og:image"       id="og-image"       content="https://raw.githubusercontent.com/precidoboss/my-game-sprites/main/moatsintelloadingimage-removebg-preview.png">
 <meta property="og:image:width"                      content="1200">
 <meta property="og:image:height"                     content="630">
@@ -27,10 +27,10 @@
 <meta name="twitter:site"                            content="@MoatsApp">
 <meta name="twitter:creator"                         content="@precidobos">
 <meta name="twitter:title"      id="tw-title"       content="MOATS INTEL — Avalanche DeFi Intelligence">
-<meta name="twitter:description" id="tw-desc"       content="Track all 11 Moats live — staked, locked & burned positions, council scores, token prices, signals and more.">
+<meta name="twitter:description" id="tw-desc"       content="Track all 18 Moats live — staked, locked & burned positions, council scores, token prices, signals and more.">
 <meta name="twitter:image"      id="tw-image"       content="https://raw.githubusercontent.com/precidoboss/my-game-sprites/main/moatsintelloadingimage-removebg-preview.png">
 <meta name="twitter:image:alt"                       content="MOATS INTEL Dashboard">
-<meta name="description"        id="meta-desc"      content="MOATS INTEL — Track all 11 Moats live on Avalanche.">
+<meta name="description"        id="meta-desc"      content="MOATS INTEL — Track all 18 Moats live on Avalanche.">
 <link rel="canonical"           id="link-canonical" href="">
 <link href="https://fonts.googleapis.com/css2?family=Chakra+Petch:wght@400;500;600;700&family=DM+Mono:wght@300;400;500&family=Barlow:wght@300;400;500;600&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
@@ -1126,7 +1126,7 @@ main{position:relative;z-index:1;padding:.8rem;max-width:1440px;margin:0 auto}
   </div>
   <div style="background:linear-gradient(135deg,rgba(249,115,22,.1),rgba(212,168,67,.05));border:1px solid rgba(249,115,22,.22);border-radius:13px;padding:1.3rem;margin-bottom:1rem">
     <div style="font-family:'Chakra Petch',sans-serif;font-weight:700;font-size:1.05rem;margin-bottom:.4rem">Your edge in the <span style="color:var(--acc)">Moats ecosystem</span></div>
-    <div style="font-size:.8rem;color:var(--dim);line-height:1.65;max-width:580px">MOATS INTEL tracks all 11 moats live — staked/locked/burned positions, token prices, reward history, and council scores. Use the Investment Allocator to plan your USDC into optimal token positions, and the Signals tab to spot which moats have the most upside.</div>
+    <div style="font-size:.8rem;color:var(--dim);line-height:1.65;max-width:580px">MOATS INTEL tracks all 18 moats live — staked/locked/burned positions, token prices, reward history, and council scores. Use the Investment Allocator to plan your USDC into optimal token positions, and the Signals tab to spot which moats have the most upside.</div>
   </div>
   <div class="g2">
     <div class="ccard" style="margin-bottom:0">
@@ -1389,6 +1389,8 @@ main{position:relative;z-index:1;padding:.8rem;max-width:1440px;margin:0 auto}
           <option value="0x93d8cc111233f8c5b9a019df7c159b6f9be7b44b">Dimish</option>
           <option value="0x3399d03566bb6db0cb4f1e13047589a1499cebbc">Bensi Box</option>
           <option value="0x9c5f177cdc0332e61e423ee9ad9e4f2333f62685">Where Is Malek</option>
+          <option value="0xbc6c01957d542537f040adc1df57af87cf84671b">Red Popcorn</option>
+          <option value="0xb3fcc83669d96934dee361e897f9ec33c911deaf">Discloser</option>
           <option value="custom">Custom value →</option>
         </select>
       </div>
@@ -1675,6 +1677,8 @@ const MOATS = {
   '0x2638b56fa206078da45520b945adccccf1d90df4':{name:'Funk Moat',           short:'FUNK', ticker:'$funk',    emoji:'🎵', color:'#a855f7',tokenAddr:'0x566445F0D154D09573ec0Ae4e373C8340D41548e',  pairAddr:'0xFBb3b60556456d32efD36C6b41E601CE13F0C912', url:'https://moats.app/moat/0x2638b56fa206078da45520b945adccccf1d90df4',           logo:'IMG_3878.jpeg',                 knownSupply:10000000000, isNew:true},
   '0x5e16f968d0e33607eab44a2ed145bd6fb94f661d':{name:'Cryptopia123 Moat',   short:'TOPIA',ticker:'$topia',   emoji:'🏛️', color:'#06b6d4',tokenAddr:'0xDf50aD73b92C758bBF94869b4B7b9128bBe4a475',  pairAddr:'0x00202e518eaa23da855bbddeb3575e8e88ae6852df30dab851a3943b31895eb7', url:'https://moats.app/moat/0x5e16f968d0e33607eab44a2ed145bd6fb94f661d',           logo:'https://raw.githubusercontent.com/precidoboss/MOATSINTEL/main/IMG_3918.jpeg', knownSupply:10000000000, isNew:true},
   '0xe9e191fb765ad6de031f911c2fa5c0022b1dac3c':{name:'VIP ACCESS PHOTOBOOTH Moat',short:'PHOTO',ticker:'$photobooth',emoji:'📸', color:'#f43f5e',tokenAddr:'0xb8DdF5e1cF27Fef943F734DA140Ae155B23cb487',  pairAddr:'0xf3508561532585e10cf9a1424ce15d4ffaf1bdedb7950e34f26e49ac12ef2b9a', url:'https://moats.app/moat/0xe9e191fb765ad6de031f911c2fa5c0022b1dac3c',      logo:'https://raw.githubusercontent.com/precidoboss/MOATSINTEL/main/IMG_3919.jpeg', knownSupply:10000000000, isNew:true},
+  '0xbc6c01957d542537f040adc1df57af87cf84671b':{name:'Red Popcorn Moat',        short:'RPOP', ticker:'$redpopcorn',emoji:'🍿', color:'#ef4444',tokenAddr:'0x04d12BeB9F4aD4F0EB8A175a7816bC8AB4287cf7',  pairAddr:'0x44d3bf3c94aaf84dbe81cf0dc5375abc9f11f3a1b87d5d08febbacb6dd836ca2', url:'https://moats.app/moat/0xbc6c01957d542537f040adc1df57af87cf84671b',           logo:'https://raw.githubusercontent.com/precidoboss/my-game-sprites/main/IMG_6035.jpeg', knownSupply:10000000000, isNew:true},
+  '0xb3fcc83669d96934dee361e897f9ec33c911deaf':{name:'Discloser Moat',           short:'DISC', ticker:'$discloser', emoji:'🔓', color:'#8b5cf6',tokenAddr:'0x36D982E00B2dce5435Ef65e4266896B261fA3393',  pairAddr:'0xbd1671e00c1c8d39773d0df703e687f384033c22ebebd622cc412b2867dd7a73',  url:'https://moats.app/moat/0xb3fcc83669d96934dee361e897f9ec33c911deaf',           logo:'https://raw.githubusercontent.com/precidoboss/my-game-sprites/main/IMG_6036.jpeg', knownSupply:10000000000, isNew:true},
 };
 
 // Pre-seed supply cache with known values — app works instantly, Snowtrace enriches later
@@ -2447,13 +2451,13 @@ function setMeta(title, desc, img, url) {
   document.title = title ? title + ' — ' + SITE_NAME : SITE_NAME;
   const setTag = (id, val) => { const el = document.getElementById(id); if (el) el.setAttribute(el.tagName === 'LINK' ? 'href' : 'content', val); };
   setTag('og-title',  title || SITE_NAME);
-  setTag('og-desc',   desc  || 'Track all 11 Moats live on Avalanche.');
+  setTag('og-desc',   desc  || 'Track all 18 Moats live on Avalanche.');
   setTag('og-image',  img   || OG_IMG);
   setTag('og-url',    url   || SITE_URL);
   setTag('tw-title',  title || SITE_NAME);
-  setTag('tw-desc',   desc  || 'Track all 11 Moats live on Avalanche.');
+  setTag('tw-desc',   desc  || 'Track all 18 Moats live on Avalanche.');
   setTag('tw-image',  img   || OG_IMG);
-  setTag('meta-desc', desc  || 'Track all 11 Moats live on Avalanche.');
+  setTag('meta-desc', desc  || 'Track all 18 Moats live on Avalanche.');
   setTag('link-canonical', url || SITE_URL);
 }
 
@@ -3115,7 +3119,7 @@ async function renderMoatRewards(addr){
   // If no onChain data, fall back to API events for tally
   const tallySource = tallyEvs.length > 0 ? tallyEvs : allRewardEvs;
 
-  // ── Step 4: Resolve unknown token addresses via CoinGecko ──
+  // ── Step 4: Resolve unknown token addresses via CoinGecko, then DexScreener fallback ──
   const unknownAddrs = new Set();
   tallySource.forEach(e=>{
     const ra = (e.rewardTokenAddr||e.rewardToken||'').toLowerCase();
@@ -3124,6 +3128,7 @@ async function renderMoatRewards(addr){
   const cgCache = {}; // addr -> {symbol, name, thumb}
   if(unknownAddrs.size>0){
     await Promise.allSettled([...unknownAddrs].map(async tAddr=>{
+      // First try CoinGecko
       try{
         const cgRes = await fetch(
           'https://api.coingecko.com/api/v3/coins/avalanche/contract/'+tAddr
@@ -3131,6 +3136,27 @@ async function renderMoatRewards(addr){
         if(cgRes?.symbol){
           cgCache[tAddr]={symbol:cgRes.symbol.toUpperCase(),name:cgRes.name,thumb:cgRes.image?.thumb||''};
           REWARD_TOKENS[tAddr]=cgRes.symbol.toUpperCase();
+          return; // CoinGecko worked, skip DexScreener
+        }
+      }catch(e){}
+      // Fallback: try DexScreener token search on Avalanche
+      try{
+        const dsRes = await fetch(
+          'https://api.dexscreener.com/latest/dex/tokens/'+tAddr
+        ).then(r=>r.ok?r.json():null).catch(()=>null);
+        const pairs = (dsRes?.pairs||[]).filter(p=>p.chainId==='avalanche'||p.chainId==='avax');
+        if(pairs.length>0){
+          const p0 = pairs[0];
+          const isBase = (p0.baseToken?.address||'').toLowerCase()===tAddr;
+          const tok = isBase ? p0.baseToken : p0.quoteToken;
+          const sym = (tok?.symbol||'').toUpperCase();
+          const nm  = tok?.name||sym;
+          // Try to get logo from DexScreener pair info (some pairs include token logos)
+          const thumb = p0.info?.imageUrl || '';
+          if(sym){
+            cgCache[tAddr]={symbol:sym, name:nm, thumb};
+            REWARD_TOKENS[tAddr]=sym;
+          }
         }
       }catch(e){}
     }));
@@ -3224,16 +3250,34 @@ async function renderMoatRewards(addr){
         }
       }catch(e){}
     }
-    // Fetch prices for unknown tokens via CoinGecko if not already cached
+    // Fetch prices for unknown tokens via CoinGecko, then DexScreener fallback
     const unknownRewardTokens = Object.keys(rewardTally).filter(label=>!rewardPriceMap[label]||rewardPriceMap[label]===0);
     if(unknownRewardTokens.length>0){
       await Promise.allSettled(unknownRewardTokens.map(async label=>{
         // Try to find this token address from REWARD_TOKENS map
         const addr2 = Object.entries(REWARD_TOKENS).find(([,v])=>v===label)?.[0];
         if(addr2&&addr2.startsWith('0x')){
+          // First try CoinGecko price
           try{
             const cg2 = await fetch(`https://api.coingecko.com/api/v3/simple/token_price/avalanche?contract_addresses=${addr2}&vs_currencies=usd`).then(r=>r.ok?r.json():null);
-            if(cg2?.[addr2.toLowerCase()]?.usd>0) rewardPriceMap[label]=cg2[addr2.toLowerCase()].usd;
+            if(cg2?.[addr2.toLowerCase()]?.usd>0){ rewardPriceMap[label]=cg2[addr2.toLowerCase()].usd; return; }
+          }catch(e){}
+          // Fallback: try DexScreener for price
+          try{
+            const ds2 = await fetch(`https://api.dexscreener.com/latest/dex/tokens/${addr2}`).then(r=>r.ok?r.json():null);
+            const pairs2 = (ds2?.pairs||[]).filter(p=>(p.chainId==='avalanche'||p.chainId==='avax')&&Number(p.liquidity?.usd||0)>0);
+            if(pairs2.length>0){
+              const px = Number(pairs2[0].priceUsd||0);
+              if(px>0) rewardPriceMap[label]=px;
+              // Also capture logo if not already in cgCache
+              const isBase = (pairs2[0].baseToken?.address||'').toLowerCase()===addr2.toLowerCase();
+              const dsTok = isBase ? pairs2[0].baseToken : pairs2[0].quoteToken;
+              const dsThumb = pairs2[0].info?.imageUrl||'';
+              if(dsThumb&&!cgCache[addr2]?.thumb){
+                if(!cgCache[addr2]) cgCache[addr2]={symbol:label,name:label,thumb:''};
+                cgCache[addr2].thumb=dsThumb;
+              }
+            }
           }catch(e){}
         }
       }));
@@ -12182,7 +12226,7 @@ const GUIDE_SLIDES = [
   {
     id: 'ecosystem',
     title: 'The Moats Ecosystem',
-    subtitle: '11 moats. One connected fortress.',
+    subtitle: '18 moats. One connected fortress.',
     body: 'Participate across multiple moats to boost your Diversity Multiplier. Stack your Council Score, claim rewards from multiple pools, and build your fortress on Avalanche.',
     bg: ['#141210','#1c1916'],
     accent: '#34d399',
@@ -12240,7 +12284,7 @@ const GUIDE_SLIDES = [
       ctx.save();
       ctx.fillStyle='#34d399'; ctx.font='bold 11px Chakra Petch,sans-serif';
       ctx.textAlign='center';
-      ctx.fillText('Build your fortress across all 11 moats 🏰', cx, cy+H/2-28);
+      ctx.fillText('Build your fortress across all 18 moats 🏰', cx, cy+H/2-28);
       ctx.restore();
     }
   }
